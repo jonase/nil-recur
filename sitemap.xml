@@ -2,7 +2,7 @@
 <urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url>
 <loc>
-http://blogawesome.com/blog/archives.html
+http://blogawesome.com/archives.html
 </loc>
 <lastmod>
 2014-11-30
@@ -10,7 +10,7 @@ http://blogawesome.com/blog/archives.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/blog/index.html
+http://blogawesome.com/index.html
 </loc>
 <lastmod>
 2014-11-30
@@ -18,7 +18,7 @@ http://blogawesome.com/blog/index.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/blog/pages/about.html
+http://blogawesome.com/pages/about.html
 </loc>
 <lastmod>
 2014-11-30
@@ -26,7 +26,7 @@ http://blogawesome.com/blog/pages/about.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/blog/posts/29-11-2014-om-select.html
+http://blogawesome.com/posts/29-11-2014-om-select.html
 </loc>
 <lastmod>
 2014-11-30
@@ -34,7 +34,7 @@ http://blogawesome.com/blog/posts/29-11-2014-om-select.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/blog/tags/clojurescript.html
+http://blogawesome.com/tags/clojurescript.html
 </loc>
 <lastmod>
 2014-11-30
@@ -42,7 +42,7 @@ http://blogawesome.com/blog/tags/clojurescript.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/blog/tags/om.html
+http://blogawesome.com/tags/om.html
 </loc>
 <lastmod>
 2014-11-30
