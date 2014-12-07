@@ -15,7 +15,7 @@ http://blogawesome.com/
 Ramblings about programming
 </description>
 <lastBuildDate>
-Sun, 07 Dec 2014 18:12:04 +0200
+Sun, 07 Dec 2014 19:11:51 +0200
 </lastBuildDate>
 <author>
 Jonas Enlund
@@ -31,7 +31,7 @@ http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
 Reusable Om components, part 2
 </title>
 <description>
-&lt;p&gt;In &lt;a href='http://jonase.github.io/nil-recur/posts/29-11-2014-om-select.htm'&gt;part 1&lt;/a&gt; of this series we built a declarative &lt;code&gt;select&lt;/code&gt; component. In this post we will instead build a &lt;code&gt;table&lt;/code&gt; component. We take the same approach but along the way we will find a few interesting limitations and gotchas.&lt;/p&gt;&lt;p&gt;Let's start the same way as in the previous installment, but this time we'll use a different data set:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;def posts
+&lt;p&gt;In &lt;a href='http://jonase.github.io/nil-recur/posts/29-11-2014-om-select.html'&gt;part 1&lt;/a&gt; of this series we built a declarative &lt;code&gt;select&lt;/code&gt; component. In this post we will instead build a &lt;code&gt;table&lt;/code&gt; component. We take the same approach but along the way we will find a few interesting limitations and gotchas.&lt;/p&gt;&lt;p&gt;Let's start the same way as in the previous installment, but this time we'll use a different data set:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;def posts
   &amp;#91;{:project &amp;quot;Reagent&amp;quot;
     :author &amp;quot;holmsand&amp;quot;
     :url &amp;quot;https://github.com/reagent-project/reagent&amp;quot;}
