@@ -5,7 +5,7 @@
 http://blogawesome.com/nil-recur/archives.html
 </loc>
 <lastmod>
-2014-11-30
+2014-12-07
 </lastmod>
 </url>
 <url>
@@ -13,7 +13,7 @@ http://blogawesome.com/nil-recur/archives.html
 http://blogawesome.com/nil-recur/index.html
 </loc>
 <lastmod>
-2014-11-30
+2014-12-07
 </lastmod>
 </url>
 <url>
@@ -21,7 +21,7 @@ http://blogawesome.com/nil-recur/index.html
 http://blogawesome.com/nil-recur/pages/about.html
 </loc>
 <lastmod>
-2014-11-30
+2014-12-07
 </lastmod>
 </url>
 <url>
@@ -29,7 +29,15 @@ http://blogawesome.com/nil-recur/pages/about.html
 http://blogawesome.com/nil-recur/posts/29-11-2014-om-select.html
 </loc>
 <lastmod>
-2014-11-30
+2014-12-07
+</lastmod>
+</url>
+<url>
+<loc>
+http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
+</loc>
+<lastmod>
+2014-12-07
 </lastmod>
 </url>
 <url>
@@ -37,7 +45,7 @@ http://blogawesome.com/nil-recur/posts/29-11-2014-om-select.html
 http://blogawesome.com/nil-recur/tags/clojurescript.html
 </loc>
 <lastmod>
-2014-11-30
+2014-12-07
 </lastmod>
 </url>
 <url>
@@ -45,7 +53,7 @@ http://blogawesome.com/nil-recur/tags/clojurescript.html
 http://blogawesome.com/nil-recur/tags/om.html
 </loc>
 <lastmod>
-2014-11-30
+2014-12-07
 </lastmod>
 </url>
 </urlset>

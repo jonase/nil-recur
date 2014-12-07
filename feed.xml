@@ -15,11 +15,159 @@ http://blogawesome.com/
 Ramblings about programming
 </description>
 <lastBuildDate>
-Sun, 30 Nov 2014 13:55:45 +0200
+Sun, 07 Dec 2014 18:12:04 +0200
 </lastBuildDate>
 <author>
 Jonas Enlund
 </author>
+<item>
+<guid>
+http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
+</guid>
+<link>
+http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
+</link>
+<title>
+Reusable Om components, part 2
+</title>
+<description>
+&lt;p&gt;In &lt;a href='http://jonase.github.io/nil-recur/posts/29-11-2014-om-select.htm'&gt;part 1&lt;/a&gt; of this series we built a declarative &lt;code&gt;select&lt;/code&gt; component. In this post we will instead build a &lt;code&gt;table&lt;/code&gt; component. We take the same approach but along the way we will find a few interesting limitations and gotchas.&lt;/p&gt;&lt;p&gt;Let's start the same way as in the previous installment, but this time we'll use a different data set:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;def posts
+  &amp;#91;{:project &amp;quot;Reagent&amp;quot;
+    :author &amp;quot;holmsand&amp;quot;
+    :url &amp;quot;https://github.com/reagent-project/reagent&amp;quot;}
+   {:project &amp;quot;Quiescent&amp;quot;
+    :author &amp;quot;levand&amp;quot;
+    :url &amp;quot;https://github.com/levand/quiescent&amp;quot;}
+   {:project &amp;quot;Reacl&amp;quot;
+    :author &amp;quot;active-group&amp;quot;
+    :url &amp;quot;https://github.com/active-group/reacl&amp;quot;}
+   {:project &amp;quot;Om&amp;quot;
+    :author &amp;quot;swannodette&amp;quot;
+    :url &amp;quot;https://github.com/swannodette/om&amp;quot;}&amp;#93;&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The table component we'll build will be used as follows:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;om/build table
+          {:data projects
+           :columns &amp;#91;{:title &amp;quot;Author&amp;quot;
+                      :cell-fn :author}
+                     {:title &amp;quot;Project&amp;quot;
+                      :cell-fn &amp;#40;fn &amp;#91;{:keys &amp;#91;project url&amp;#93;
+                                 &amp;#40;dom/a #js {:href url} project&amp;#41;}
+
+
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;I hope the above is self-explanatory (at least that's the goal). In particular, the &lt;code&gt;:columns&lt;/code&gt; vector is a &lt;strong&gt;declerative description&lt;/strong&gt; of the table columns. The &lt;code&gt;cell-fn&lt;/code&gt; takes a record and returns something that should be rendered. For &quot;Author&quot; the &lt;code&gt;cell-fn&lt;/code&gt; simply returns a string and for the &quot;Project&quot; an anchor tag is returned.&lt;/p&gt;&lt;p&gt;The table component as described above will work fine until you need to render another component in the cells of a column. For example, say you have created a component &lt;code&gt;voter&lt;/code&gt; which you would like to use to vote on the individual projects:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;defn voter &amp;#91;{:keys &amp;#91;votes on-vote&amp;#93;} owner&amp;#93;
+  &amp;#40;om/component
+   &amp;#40;dom/span nil
+             &amp;#40;dom/button #js {:onClick #&amp;#40;on-vote &amp;#40;inc votes&amp;#41;&amp;#41;} &amp;quot;+&amp;quot;&amp;#41;
+             votes
+             &amp;#40;dom/button #js {:onClick #&amp;#40;on-vote &amp;#40;dec votes&amp;#41;&amp;#41;} &amp;quot;-&amp;quot;&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The &lt;code&gt;voter&lt;/code&gt; function is an Om component and we should be able to render it in our table. Let's extend the &lt;code&gt;:columns&lt;/code&gt; description with an &lt;code&gt;:cell&lt;/code&gt; key:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;om/build table
+          {:data projects
+           :columns &amp;#91;{:title &amp;quot;Votes&amp;quot;
+                      :cell voter
+                      :cell-data-fn &amp;#40;fn &amp;#91;record&amp;#93;
+                                      {:votes &amp;lt;number-of-votes&amp;gt;
+                                       :on-vote &amp;lt;on-vote-callback&amp;gt;}&amp;#41;
+                     {:title &amp;quot;Author&amp;quot;
+                      :cell-fn :author}
+                     {:title &amp;quot;Project&amp;quot;
+                      :cell-fn &amp;#40;fn &amp;#91;{:keys &amp;#91;project url&amp;#93;
+                                 &amp;#40;dom/a #js {:href url} project&amp;#41;}
+
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Note that we also need a &lt;code&gt;:cell-data-fn&lt;/code&gt; key that, given a record returns the data that the &lt;code&gt;cell&lt;/code&gt; component needs. In the implementation you will see that &lt;code&gt;:cell-data-fn&lt;/code&gt; defaults to &lt;code&gt;identity&lt;/code&gt; since it's often the case that the component only needs the actual record.&lt;/p&gt;&lt;h3&gt;&lt;a name=&quot;all&amp;#95;the&amp;#95;things&amp;#95;that&amp;#95;won't&amp;#95;work&quot;&gt;&lt;/a&gt;All the things that won't work&lt;/h3&gt;&lt;p&gt;For me, the biggest limitation of Om is the lack of support for anonymous and higher order components. For example, it would be great if we wouldn't need both &lt;code&gt;:cell&lt;/code&gt; and &lt;code&gt;:cell-fn&lt;/code&gt; and for simple cases would be able to write&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;om/build table
+          {:data projects
+           :columns &amp;#91;{:title &amp;quot;Project&amp;quot;
+                      :cell #&amp;#40;om/component &amp;#40;dom/a #js {:href &amp;#40;:url %&amp;#41;} &amp;#40;:name %&amp;#41;&amp;#41;&amp;#41;}
+                     ...&amp;#93;}&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The above will appear to work, but it does not do what you might expect. A new component (for each record in this case) is created and mounted each time the parent component is rendered! The same story again with higher order components:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;defn text-component &amp;#91;key&amp;#93;
+  &amp;#40;fn &amp;#91;data &amp;#95;&amp;#93;
+    &amp;#40;om/component
+      &amp;#40;span nil &amp;#40;key data&amp;#41;&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;om/build table
+          {:data projects
+           :columns &amp;#91;{:title &amp;quot;Author&amp;quot;
+                      :cell &amp;#40;text-component :author&amp;#41;}
+                     ...&amp;#93;}&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The same problem appears here. A new component is created and mounted on each re-render. It might appear to work fine until, for example, you start to loose focus on input elements or experience performance problems.&lt;/p&gt;&lt;p&gt;I'd love to hear from the other Clojurescript React wrappers out there (reagent, quiescent etc.) if they have found any solutions for these problems. It's my understanding however that React itself has this same limitation and is therefor a fundamental problem which is difficult to get away from (I would be extremely happy to be proven wrong on this issue!). Unfortunately, this means that one of the most powerful abstraction mechanisms in functional programming (= &lt;em&gt;closures&lt;/em&gt;) are not available to component authors.&lt;/p&gt;&lt;h3&gt;&lt;a name=&quot;example&amp;#95;application&quot;&gt;&lt;/a&gt;Example application&lt;/h3&gt;&lt;p&gt;Here's a very simple example application using (and implementing) the &lt;code&gt;table&lt;/code&gt; component which sorts the table based on the votes:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;;; table component
+
+&amp;#40;defn table-header &amp;#91;columns owner&amp;#93;
+  &amp;#40;om/component
+   &amp;#40;dom/thead nil
+              &amp;#40;apply dom/tr nil
+                     &amp;#40;map #&amp;#40;dom/th nil &amp;#40;:title %&amp;#41;&amp;#41;
+                          columns&amp;#41;&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;defn table-body &amp;#91;{:keys &amp;#91;data columns&amp;#93;} owner&amp;#93;
+  &amp;#40;om/component
+   &amp;#40;apply dom/tbody nil
+     &amp;#40;for &amp;#91;record data&amp;#93;
+       &amp;#40;apply dom/tr nil
+         &amp;#40;for &amp;#91;{:keys &amp;#91;cell-fn cell cell-data-fn&amp;#93;} columns&amp;#93;
+           &amp;#40;dom/td nil
+             &amp;#40;if cell-fn
+               &amp;#40;cell-fn record&amp;#41;
+               &amp;#40;om/build cell &amp;#40;&amp;#40;or cell-data-fn identity&amp;#41; record&amp;#41;&amp;#41;&amp;#41;&amp;#41;&amp;#41;&amp;#41;&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;defn table &amp;#91;table-spec owner&amp;#93;
+  &amp;#40;om/component
+   &amp;#40;dom/table nil
+              &amp;#40;om/build table-header &amp;#40;:columns table-spec&amp;#41;&amp;#41;
+              &amp;#40;om/build table-body table-spec&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+
+
+;;; Application
+
+&amp;#40;defn index-by &amp;#91;f coll&amp;#93;
+  &amp;#40;reduce &amp;#40;fn &amp;#91;result item&amp;#93;
+            &amp;#40;assoc result &amp;#40;f item&amp;#41; item&amp;#41;&amp;#41;
+          {}
+          coll&amp;#41;&amp;#41;
+
+&amp;#40;def app-state &amp;#40;atom &amp;#40;index-by :name projects&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;defn voter &amp;#91;{:keys &amp;#91;votes on-vote&amp;#93;} owner&amp;#93;
+  &amp;#40;om/component
+   &amp;#40;dom/span nil
+             &amp;#40;dom/button #js {:onClick #&amp;#40;on-vote &amp;#40;inc votes&amp;#41;&amp;#41;} &amp;quot;+&amp;quot;&amp;#41;
+             votes
+             &amp;#40;dom/button #js {:onClick #&amp;#40;on-vote &amp;#40;dec votes&amp;#41;&amp;#41;} &amp;quot;-&amp;quot;&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;defn root-component &amp;#91;data&amp;#93;
+  &amp;#40;om/component
+   &amp;#40;let &amp;#91;data &amp;#40;om/value data&amp;#41;&amp;#93;
+     &amp;#40;om/build table
+               {:data &amp;#40;-&amp;gt;&amp;gt; data
+                           om/value
+                           vals
+                           &amp;#40;sort-by #&amp;#40;or &amp;#40;:votes %&amp;#41; 0&amp;#41;&amp;#41;
+                           reverse&amp;#41;
+                :columns &amp;#91;{:title &amp;quot;Votes&amp;quot;
+                           :cell voter
+                           :cell-data-fn &amp;#40;fn &amp;#91;record&amp;#93;
+                                           {:votes &amp;#40;or &amp;#40;:votes record&amp;#41; 0&amp;#41;
+                                            :on-vote &amp;#40;fn &amp;#91;n&amp;#93;
+                                                       &amp;#40;swap! app-state
+                                                              assoc-in
+                                                              &amp;#91;&amp;#40;:name record&amp;#41; :votes&amp;#93;
+                                                              n&amp;#41;&amp;#41;}&amp;#41;}
+                          {:title &amp;quot;Author&amp;quot;
+                           :cell-fn :author}
+                          {:title &amp;quot;Project&amp;quot;
+                           :cell-fn &amp;#40;fn &amp;#91;{:keys &amp;#91;name url&amp;#93;}&amp;#93;
+                                      &amp;#40;dom/a #js {:href url} name&amp;#41;&amp;#41;}&amp;#93;}&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;defn init &amp;#91;&amp;#93;
+  &amp;#40;om/root root-component
+           app-state
+           {:target &amp;#40;.getElementById js/document &amp;quot;app&amp;quot;&amp;#41;}&amp;#41;&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;If you want to run the application you can clone the &lt;a href='https://github.com/jonase/nil-recur'&gt;nil-recur&lt;/a&gt; repo where you can find &lt;a href='https://github.com/jonase/nil-recur/blob/master/examples/src/examples/table&amp;#95;component.cljs'&gt;this example&lt;/a&gt;.&lt;/p&gt;
+</description>
+<pubDate>
+Sun, 07 Dec 2014 00:00:00 +0200
+</pubDate>
+<author>
+Jonas Enlund
+</author>
+</item>
 <item>
 <guid>
 http://blogawesome.com/nil-recur/posts/29-11-2014-om-select.html
