@@ -80,7 +80,7 @@ While working with input elements in Om I was surprised to realize that
 my components did not behave like controlled components does in
 React. After some digging I
 realized that the behaviour seemed to be intentional, since [Om wraps React input components in its own stateful versions](https://github.com/swannodette/om/blob/master/src/om/dom.cljs#L7-L36). The reason for this is
-that Om does rendering asynchrounusly via `requestAnimationFrame` and
+that Om does rendering asynchronously via `requestAnimationFrame` and
 it turns out that React does not fully support this mode of rendering.
 
 As an example, consider the following application:
@@ -114,7 +114,7 @@ If you try to run this application you will notice two interesting things
 
 ### Input components in Reagent
 
-Reagent also does asynchrounous rendering and as such should be battling
+Reagent also does asynchronous rendering and as such should be battling
 with the same issues, and indeed [it does](https://github.com/reagent-project/reagent/blob/master/src/reagent/impl/template.cljs#L82-L140). I have not yet been able to completely understand this implementation but it seems like an attempt to keep the semantics of Reacts controlled components even in the case of asynchronous rendering.
 
 It seems like this is not an easy task. For example, if you try this short reagent code snippet (which is very similar to the Om example above)
