@@ -15,7 +15,7 @@ http://blogawesome.com/
 Ramblings about programming
 </description>
 <lastBuildDate>
-Sun, 14 Dec 2014 14:30:45 +0200
+Sun, 14 Dec 2014 14:54:52 +0200
 </lastBuildDate>
 <author>
 Jonas Enlund
@@ -97,7 +97,7 @@ var SomeForm = React.createClass&amp;#40;{
 
 &amp;#40;defn init! &amp;#91;&amp;#93;
   &amp;#40;reagent/render-component &amp;#91;main-page&amp;#93; &amp;#40;.getElementById js/document &amp;quot;app&amp;quot;&amp;#41;&amp;#41;&amp;#41;
-&lt;/code&gt;&lt;/pre&gt;&lt;ol&gt;&lt;li&gt;You will notice the same behaviour as in the Om example: If you type a character in the middle of the text the cursor jumps to the last position.&lt;/li&gt;&lt;li&gt;The state of the &lt;code&gt;text&lt;/code&gt; atom and the rendered text in the component seems to be kept in sync since it is not possible to type more than 10 characters into the input box.&lt;/li&gt;&lt;/ol&gt;&lt;h3&gt;&lt;a name=&quot;conclusions&quot;&gt;&lt;/a&gt;Conclusions&lt;/h3&gt;&lt;p&gt;It is unfortunate that asynchronous rendering does not work properly in React. However, this is hardly the fault of React, since they are pretty clear in their communication with the community that rendering with &lt;code&gt;requestAnimationFrame&lt;/code&gt; is simply &lt;a href='https://groups.google.com/forum/#!msg/reactjs/LkTihnf6Ey8/FgFvvf33GckJ'&gt;not supported&lt;/a&gt;&lt;/p&gt;&lt;blockquote&gt;&lt;p&gt; Let me repeat myself: rAF batching is not supported. It is not a priority for us because it does not solve any real problems that I know of and makes things much harder to reason about. &lt;/p&gt;&lt;/blockquote&gt;&lt;p&gt;It is interesting that the various Clojurescript React wrappers choose async rendering as their model when the underlying library that they rely on does not fully support it.&lt;/p&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;ol&gt;&lt;li&gt;You will notice the same behaviour as in the Om example: If you type a character in the middle of the text the cursor jumps to the last position.&lt;/li&gt;&lt;li&gt;The state of the &lt;code&gt;text&lt;/code&gt; atom and the rendered text in the component seems to be kept in sync since it is not possible to type more than 10 characters into the input box.&lt;/li&gt;&lt;/ol&gt;&lt;h3&gt;&lt;a name=&quot;conclusions&quot;&gt;&lt;/a&gt;Conclusions&lt;/h3&gt;&lt;p&gt;It is unfortunate that asynchronous rendering does not work properly in React. However, this is hardly the fault of React, since they are pretty clear in their communication with the community that rendering with &lt;code&gt;requestAnimationFrame&lt;/code&gt; is simply &lt;a href='https://groups.google.com/forum/#!msg/reactjs/LkTihnf6Ey8/FgFvvf33GckJ'&gt;not supported&lt;/a&gt;:&lt;/p&gt;&lt;blockquote&gt;&lt;p&gt; Let me repeat myself: rAF batching is not supported. It is not a priority for us because it does not solve any real problems that I know of and makes things much harder to reason about. &lt;/p&gt;&lt;/blockquote&gt;&lt;p&gt;It is interesting that the various Clojurescript React wrappers choose async rendering as their model when the underlying library that they rely on does not fully support it.&lt;/p&gt;
 </description>
 <pubDate>
 Sun, 14 Dec 2014 00:00:00 +0200
