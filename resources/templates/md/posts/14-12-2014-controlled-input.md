@@ -143,7 +143,7 @@ It seems like this is not an easy task. For example, if you try this short reage
 
 It is unfortunate that asynchronous rendering does not work properly
 in React. However, this is hardly the fault of React, since they are pretty clear in
-their communication with the community that rendering with `requestAnimationFrame` is simply [not supported](https://groups.google.com/forum/#!msg/reactjs/LkTihnf6Ey8/FgFvvf33GckJ)
+their communication with the community that rendering with `requestAnimationFrame` is simply [not supported](https://groups.google.com/forum/#!msg/reactjs/LkTihnf6Ey8/FgFvvf33GckJ):
 
 > Let me repeat myself: rAF batching is not supported. It is not a priority for us because it does not solve any real problems that I know of and makes things much harder to reason about.
 
