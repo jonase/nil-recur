@@ -15,11 +15,97 @@ http://blogawesome.com/
 Ramblings about programming
 </description>
 <lastBuildDate>
-Sun, 07 Dec 2014 19:11:51 +0200
+Sun, 14 Dec 2014 13:49:04 +0200
 </lastBuildDate>
 <author>
 Jonas Enlund
 </author>
+<item>
+<guid>
+http://blogawesome.com/nil-recur/posts/14-12-2014-controlled-input.html
+</guid>
+<link>
+http://blogawesome.com/nil-recur/posts/14-12-2014-controlled-input.html
+</link>
+<title>
+Controlled and Uncontrolled input
+</title>
+<description>
+&lt;p&gt;&lt;a href='http://facebook.github.io/react/'&gt;React&lt;/a&gt; tries as much as possible to be &lt;em&gt;declarative&lt;/em&gt;: The body of the &lt;code&gt;render&lt;/code&gt; method is a description of the component &lt;em&gt;at any point in time&lt;/em&gt;. Some input elements pose an interesting challange to this problem:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;lt;input type=&amp;quot;text&amp;quot; value={this.props.name} onChange=... /&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Given that we specify that the value of the input is &lt;code&gt;this.props.value&lt;/code&gt;, and props are treated immutably by react, what should happen if we type something into the input box? If we change the content of the input we break the declarative model of React because the specified value does not match the actual content.&lt;/p&gt;&lt;p&gt;In React parlance, there is a difference between &lt;a href='http://facebook.github.io/react/docs/forms.html#controlled-components'&gt;controlled and uncontrolled components&lt;/a&gt;. A controlled component will always contain the value specified in the &lt;code&gt;value&lt;/code&gt; attribute. Controlled components are preferred because they preserve the overall declarative nature of React. The &lt;code&gt;onChange&lt;/code&gt; callback must somehow cause a re-render so that the value property can be updated:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;var NameInput = React.createClass&amp;#40;{
+  render: function&amp;#40;&amp;#41; {
+    return &amp;#40;
+      &amp;lt;input type=&amp;quot;text&amp;quot;
+             value={this.props.name.toUpperCase&amp;#40;&amp;#41;}
+             onChange={this.handleChange}/&amp;gt;
+    &amp;#41;;
+  },
+
+  handleChange: function&amp;#40;evt&amp;#41; {
+    this.props.nameChange&amp;#40;evt.target.value&amp;#41;;
+  }
+}&amp;#41;;
+
+var SomeForm = React.createClass&amp;#40;{
+  getInitialState: function&amp;#40;&amp;#41; {
+    return {name: &amp;quot;&amp;quot;,
+            age: &amp;quot;&amp;quot;};
+  },
+
+  render: function&amp;#40;&amp;#41; {
+    return &amp;#40;
+      &amp;lt;ul&amp;gt;
+       &amp;lt;li&amp;gt;Name: &amp;lt;NameInput name={this.state.name}
+                            nameChange={this.handleNameChange}/&amp;gt;&amp;lt;/li&amp;gt;
+       &amp;lt;li&amp;gt;Age: ...&amp;lt;/li&amp;gt;
+      &amp;lt;/ul&amp;gt;
+    &amp;#41;;
+  },
+
+  handleNameChange: function&amp;#40;name&amp;#41; {
+    this.setState&amp;#40;{name: name}&amp;#41;;
+  }
+}&amp;#41;;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Note that the &lt;code&gt;NameInput&lt;/code&gt; component is completely stateless. At any point in time, the component will display the value of &lt;code&gt;this.props.name.toUpperCase&amp;#40;&amp;#41;&lt;/code&gt;. It is up to the &lt;code&gt;onChange&lt;/code&gt; callback to decide what to do if the user types something into the box. There is no default behaviour like &lt;em&gt;&quot;add the typed letter at cursor position&quot;&lt;/em&gt;.&lt;/p&gt;&lt;p&gt;React also has a concept of uncontrolled components where instead of specifying &lt;code&gt;value&lt;/code&gt; you use &lt;code&gt;defaultValue&lt;/code&gt; and this value will be used for the initial render and after that the textbox behaves like a standard html input element. Note that uncontrolled components breaks the declarativeness. The words &lt;em&gt;&quot;initial render&quot;&lt;/em&gt; and &lt;em&gt;&quot;after&quot;&lt;/em&gt; should make it clear that the render function no longer specifies how the component should render at any point in time.&lt;/p&gt;&lt;h3&gt;&lt;a name=&quot;input&amp;#95;components&amp;#95;in&amp;#95;om&quot;&gt;&lt;/a&gt;Input components in Om&lt;/h3&gt;&lt;p&gt;While working with input elements in Om I was surprised to realize that my components did not behave like controlled components does in React. After some digging I realized that the behaviour seemed to be intentional, since &lt;a href='https://github.com/swannodette/om/blob/master/src/om/dom.cljs#L7-L36'&gt;Om wraps React input components in its own stateful versions&lt;/a&gt;. The reason for this is that Om does rendering asynchrounusly via &lt;code&gt;requestAnimationFrame&lt;/code&gt; and it turns out that React does not fully support this mode of rendering.&lt;/p&gt;&lt;p&gt;As an example, consider the following application:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;def app-state &amp;#40;atom {:text &amp;quot;foo&amp;quot;}&amp;#41;&amp;#41;
+
+&amp;#40;defn my-input &amp;#91;app&amp;#93;
+  &amp;#40;reify
+    om/IRender
+    &amp;#40;render &amp;#91;this&amp;#93;
+      &amp;#40;dom/input
+        #js {:type &amp;quot;text&amp;quot;
+             :value &amp;#40;.toUpperCase &amp;#40;:text app&amp;#41;&amp;#41;
+             :onChange #&amp;#40;if &amp;#40;&amp;lt; &amp;#40;count app&amp;#41; 10&amp;#41;
+                          &amp;#40;om/transact! app
+                                        :text
+                                        &amp;#40;constantly &amp;#40;-&amp;gt; % .-target .-value&amp;#41;&amp;#41;&amp;#41;&amp;#41;}&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;om/root
+  my-input
+  app-state
+  {:target &amp;#40;. js/document &amp;#40;getElementById &amp;quot;app&amp;quot;&amp;#41;&amp;#41;}&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;If you try to run this application you will notice two interesting things&lt;/p&gt;&lt;ol&gt;&lt;li&gt;The input text is kept in upper case. However, if you try to add a character to the middle of the text the cursor will jump to the last position. If there is no transformation done (i.e., &lt;code&gt;:value &amp;#40;:text app&amp;#41;&lt;/code&gt; instead of &lt;code&gt;:value &amp;#40;.toUpperCase &amp;#40;:text app&amp;#41;&amp;#41;&lt;/code&gt;) the cursor will stay at the correct position.&lt;/li&gt;&lt;li&gt;The app-state is updated only if the text is less that 10 characters long. It is still possible to type more characters into the input box and in that case &lt;em&gt;the local state of the component differs from the application state&lt;/em&gt;.&lt;/li&gt;&lt;/ol&gt;&lt;h3&gt;&lt;a name=&quot;input&amp;#95;components&amp;#95;in&amp;#95;reagent&quot;&gt;&lt;/a&gt;Input components in Reagent&lt;/h3&gt;&lt;p&gt;Reagent also does asynchrounous rendering and as such should be battling with the same issues, and indeed &lt;a href='https://github.com/reagent-project/reagent/blob/master/src/reagent/impl/template.cljs#L82-L140'&gt;it does&lt;/a&gt;. I have not yet been able to completely understand this implementation but it seems like an attempt to keep the semantics of Reacts controlled components even in the case of asynchronous rendering.&lt;/p&gt;&lt;p&gt;It seems like this is not an easy task. For example, if you try this short reagent code snippet (which is very similar to the Om example above)&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;defn my-input &amp;#91;on-change text&amp;#93;
+  &amp;#91;:div &amp;#91;:input {:type &amp;quot;text&amp;quot;
+                 :value &amp;#40;.toUpperCase text&amp;#41;
+                 :on-change #&amp;#40;if &amp;#40;&amp;lt; &amp;#40;count text&amp;#41; 10&amp;#41;
+                               &amp;#40;on-change &amp;#40;-&amp;gt; % .-target .-value&amp;#41;&amp;#41;&amp;#41;}&amp;#93;&amp;#93;&amp;#41;
+
+&amp;#40;def text &amp;#40;reagent/atom &amp;quot;foo&amp;quot;&amp;#41;&amp;#41;
+
+&amp;#40;defn main-page &amp;#91;&amp;#93;
+  &amp;#91;my-input #&amp;#40;reset! text %&amp;#41; @text&amp;#93;&amp;#41;
+
+&amp;#40;defn init! &amp;#91;&amp;#93;
+  &amp;#40;reagent/render-component &amp;#91;main-page&amp;#93; &amp;#40;.getElementById js/document &amp;quot;app&amp;quot;&amp;#41;&amp;#41;&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;ol&gt;&lt;li&gt;You will notice the same behaviour as in the Om example: If you type a character in the middle of the text the cursor jumps to the last position.&lt;/li&gt;&lt;li&gt;The state of the &lt;code&gt;text&lt;/code&gt; atom and the rendered text in the component seems to be kept in sync since it is not possible to type more than 10 characters into the input box.&lt;/li&gt;&lt;/ol&gt;&lt;h3&gt;&lt;a name=&quot;conclusions&quot;&gt;&lt;/a&gt;Conclusions&lt;/h3&gt;&lt;p&gt;It is unfortunate that asynchronous rendering does not work properly in React. However, this is hardly the fault of React, since they are pretty clear in their communication with the community that rendering with &lt;code&gt;requestAnimationFrame&lt;/code&gt; is simply &lt;a href='https://groups.google.com/forum/#!msg/reactjs/LkTihnf6Ey8/FgFvvf33GckJ'&gt;not supported&lt;/a&gt;&lt;/p&gt;&lt;blockquote&gt;&lt;p&gt; Let me repeat myself: rAF batching is not supported. It is not a priority for us because it does not solve any real problems that I know of and makes things much harder to reason about. &lt;/p&gt;&lt;/blockquote&gt;&lt;p&gt;It is interesting that the various Clojurescript React wrappers choose async rendering as their model when the underlying library that they rely on does not fully support it.&lt;/p&gt;
+</description>
+<pubDate>
+Sun, 14 Dec 2014 00:00:00 +0200
+</pubDate>
+<author>
+Jonas Enlund
+</author>
+</item>
 <item>
 <guid>
 http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
