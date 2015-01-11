@@ -1,7 +1,7 @@
 {:site-title       "nil/recur"
  :author           "Jonas Enlund"
  :description      "Ramblings about programming"
- :site-url         "http://blogawesome.com/"
+ :site-url         "http://jonase.github.io"
  :post-root        "posts"
  :tag-root         "tags"
  :page-root        "pages"
