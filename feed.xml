@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <rss version='2.0' xmlns:atom='http://www.w3.org/2005/Atom'>
 <channel>
-<atom:link href='http://jonase.github.io' rel='self' type='application/rss+xml'/>
+<atom:link href='http://blogawesome.com/' rel='self' type='application/rss+xml'/>
 <generator>
 clj-rss
 </generator>
@@ -9,23 +9,68 @@ clj-rss
 nil/recur
 </title>
 <link>
-http://jonase.github.io
+http://blogawesome.com/
 </link>
 <description>
 Ramblings about programming
 </description>
 <lastBuildDate>
-Mon, 15 Dec 2014 23:20:13 +0100
+Sun, 11 Jan 2015 16:27:40 +0200
 </lastBuildDate>
 <author>
 Jonas Enlund
 </author>
 <item>
 <guid>
-http://jonase.github.io/nil-recur/posts/14-12-2014-controlled-input.html
+http://blogawesome.com/nil-recur/posts/11-1-2015-pre-post-conditions.html
 </guid>
 <link>
-http://jonase.github.io/nil-recur/posts/14-12-2014-controlled-input.html
+http://blogawesome.com/nil-recur/posts/11-1-2015-pre-post-conditions.html
+</link>
+<title>
+A note on pre and post conditions
+</title>
+<description>
+&lt;p&gt;David Nolen recently published two interesting blog posts (&lt;a href='http://swannodette.github.io/2015/01/10/faster-validation-through-immutability/'&gt;here&lt;/a&gt; and  &lt;a href='http://swannodette.github.io/2015/01/09/life-with-dynamic-typing/'&gt;here&lt;/a&gt;) about the usefulness of pre and post conditions. I have recently started to use quite a lot of pre/post conditions (and other assertions and invariants) in my own code and found that they really help a lot during development. This is just a short note about how one of the examples David gave can be extended to check more known properties of the function under test.&lt;/p&gt;&lt;p&gt;Let's use the following distance function as the running example:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;defn dist &amp;#91;p0 p1&amp;#93;
+  &amp;#40;let &amp;#91;a &amp;#40;- &amp;#40;:x p0&amp;#41; &amp;#40;:x p1&amp;#41;&amp;#41;
+        b &amp;#40;- &amp;#40;:y p0&amp;#41; &amp;#40;:y p1&amp;#41;&amp;#41;&amp;#93;
+    &amp;#40;js/Math.sqrt &amp;#40;+ &amp;#40;&amp;#42; a a&amp;#41;
+                     &amp;#40;&amp;#42; b b&amp;#41;&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;David showed how to add &lt;strong&gt;pre conditions&lt;/strong&gt; to this function in order to do runtime type checking:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;defn dist &amp;#91;p0 p1&amp;#93;
+  {:pre &amp;#91;&amp;#40;point? p0&amp;#41; &amp;#40;point? p1&amp;#41;&amp;#93;}
+  ...&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;This is really useful and will catch a lot bugs during development but pre and post conditions are not limited to only type checking. This example is especially illuminating since distance functions are &lt;a href='http://en.wikipedia.org/wiki/Metric&amp;#95;%28mathematics%29'&gt;well studied in mathematics&lt;/a&gt;:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;&amp;#40;dist p0 p1&amp;#41;&lt;/code&gt; = &lt;code&gt;0&lt;/code&gt; if and only if &lt;code&gt;&amp;#40;= p0 p1&amp;#41;&lt;/code&gt;&lt;/li&gt;&lt;li&gt;&lt;code&gt;&amp;#40;dist p0 p1&amp;#41;&lt;/code&gt; &gt; &lt;code&gt;0&lt;/code&gt; if and only if &lt;code&gt;&amp;#40;not= p0 p1&amp;#41;&lt;/code&gt;&lt;/li&gt;&lt;li&gt;&lt;code&gt;&amp;#40;dist p0 p1&amp;#41;&lt;/code&gt; = &lt;code&gt;&amp;#40;dist p1 p0&amp;#41;&lt;/code&gt; for all points &lt;code&gt;p0&lt;/code&gt; and &lt;code&gt;p1&lt;/code&gt;&lt;/li&gt;&lt;li&gt;&lt;code&gt;&amp;#40;dist p0 p1&amp;#41;&lt;/code&gt; + &lt;code&gt;&amp;#40;dist p1 p2&amp;#41;&lt;/code&gt; &gt;= &lt;code&gt;&amp;#40;dist p0 p2&amp;#41;&lt;/code&gt; for all points &lt;code&gt;p0&lt;/code&gt;, &lt;code&gt;p1&lt;/code&gt; and &lt;code&gt;p2&lt;/code&gt;.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;It should be quite obvious that checking the types of the input arguments has nothing to do with whether the above properties hold or not. The first two properties however lend themselves well as a post conditions:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;defn dist &amp;#91;p0 p1&amp;#93;
+  {:pre &amp;#91;&amp;#40;point? p0&amp;#41; &amp;#40;point? p1&amp;#41;&amp;#93;
+   :post &amp;#91;&amp;#40;if &amp;#40;= p0 p1&amp;#41;
+            &amp;#40;zero? %&amp;#41;
+            &amp;#40;pos? %&amp;#41;&amp;#41;&amp;#93;}
+  ...&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Note that &lt;code&gt;%&lt;/code&gt; is bound to the functions return value. The expression &lt;code&gt;&amp;#40;if &amp;#40;= p0 p1&amp;#41; &amp;#40;zero? %&amp;#41; &amp;#40;pos? %&amp;#41;&amp;#41;&lt;/code&gt; completely captures the first two properties of our metric function and nicely ties the input arguments to the output without having to do the actual calculation (which could introduce its own set of bugs).&lt;/p&gt;&lt;p&gt;The last two properties doesn't lend themselves well to pre / post conditions and are therefor better handled by external testing tools. One obvious choice in this particular case is to use &lt;a href='https://github.com/clojure/test.check'&gt;test.check&lt;/a&gt;:&lt;/p&gt;&lt;pre&gt;&lt;code&gt;&amp;#40;def commutativity
+  &amp;#40;prop/for-all &amp;#91;p0 &amp;#40;gen-point&amp;#41;
+                 p1 &amp;#40;gen-point&amp;#41;&amp;#93;
+    &amp;#40;almost= &amp;#40;dist p0 p1&amp;#41; &amp;#40;dist p1 p0&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;def triangle-inequality
+  &amp;#40;prop/for-all &amp;#91;p0 &amp;#40;gen-point&amp;#41;
+                 p1 &amp;#40;gen-point&amp;#41;
+                 p2 &amp;#40;gen-point&amp;#41;&amp;#93;
+    &amp;#40;&amp;gt;= &amp;#40;+ &amp;#40;dist p0 p1&amp;#41; &amp;#40;dist p1 p2&amp;#41;&amp;#41;
+        &amp;#40;dist p0 p3&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;All tools that help us create reliable software should be carefully evaluated and used when appropriate. I'm happy to have put pre/post in my own toolbelt.&lt;/p&gt;
+</description>
+<pubDate>
+Sun, 11 Jan 2015 00:00:00 +0200
+</pubDate>
+<author>
+Jonas Enlund
+</author>
+</item>
+<item>
+<guid>
+http://blogawesome.com/nil-recur/posts/14-12-2014-controlled-input.html
+</guid>
+<link>
+http://blogawesome.com/nil-recur/posts/14-12-2014-controlled-input.html
 </link>
 <title>
 Controlled and Uncontrolled input
@@ -100,7 +145,7 @@ var SomeForm = React.createClass&amp;#40;{
 &lt;/code&gt;&lt;/pre&gt;&lt;ol&gt;&lt;li&gt;You will notice the same behaviour as in the Om example: If you type a character in the middle of the text the cursor jumps to the last position.&lt;/li&gt;&lt;li&gt;The state of the &lt;code&gt;text&lt;/code&gt; atom and the rendered text in the component seems to be kept in sync since it is not possible to type more than 10 characters into the input box.&lt;/li&gt;&lt;/ol&gt;&lt;h3&gt;&lt;a name=&quot;conclusions&quot;&gt;&lt;/a&gt;Conclusions&lt;/h3&gt;&lt;p&gt;It is unfortunate that asynchronous rendering does not work properly in React. However, this is hardly the fault of React, since they are pretty clear in their communication with the community that rendering with &lt;code&gt;requestAnimationFrame&lt;/code&gt; is simply &lt;a href='https://groups.google.com/forum/#!msg/reactjs/LkTihnf6Ey8/FgFvvf33GckJ'&gt;not supported&lt;/a&gt;:&lt;/p&gt;&lt;blockquote&gt;&lt;p&gt; Let me repeat myself: rAF batching is not supported. It is not a priority for us because it does not solve any real problems that I know of and makes things much harder to reason about. &lt;/p&gt;&lt;/blockquote&gt;&lt;p&gt;It is interesting that the various Clojurescript React wrappers choose async rendering as their model when the underlying library that they rely on does not fully support it.&lt;/p&gt;
 </description>
 <pubDate>
-Sun, 14 Dec 2014 00:00:00 +0100
+Sun, 14 Dec 2014 00:00:00 +0200
 </pubDate>
 <author>
 Jonas Enlund
@@ -108,10 +153,10 @@ Jonas Enlund
 </item>
 <item>
 <guid>
-http://jonase.github.io/nil-recur/posts/7-12-2014-om-table.html
+http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
 </guid>
 <link>
-http://jonase.github.io/nil-recur/posts/7-12-2014-om-table.html
+http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
 </link>
 <title>
 Reusable Om components, part 2
@@ -248,7 +293,7 @@ Reusable Om components, part 2
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;If you want to run the application you can clone the &lt;a href='https://github.com/jonase/nil-recur'&gt;nil-recur&lt;/a&gt; repo where you can find &lt;a href='https://github.com/jonase/nil-recur/blob/master/examples/src/examples/table&amp;#95;component.cljs'&gt;this example&lt;/a&gt;.&lt;/p&gt;
 </description>
 <pubDate>
-Sun, 07 Dec 2014 00:00:00 +0100
+Sun, 07 Dec 2014 00:00:00 +0200
 </pubDate>
 <author>
 Jonas Enlund
@@ -256,10 +301,10 @@ Jonas Enlund
 </item>
 <item>
 <guid>
-http://jonase.github.io/nil-recur/posts/29-11-2014-om-select.html
+http://blogawesome.com/nil-recur/posts/29-11-2014-om-select.html
 </guid>
 <link>
-http://jonase.github.io/nil-recur/posts/29-11-2014-om-select.html
+http://blogawesome.com/nil-recur/posts/29-11-2014-om-select.html
 </link>
 <title>
 Reusable Om components, part 1
@@ -317,7 +362,7 @@ Reusable Om components, part 1
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;When working with Om I strive to create components like this. I've found that these stateless and declarative components are the most reliable and reusable. In addition, they work very well with how Om takes advantage of immutable data structures in order to avoid unnecessary rendering.&lt;/p&gt;&lt;p&gt;If you want to build and run these examples on your own, complete examples are available in the &lt;a href='https://github.com/jonase/nil-recur/blob/master/examples/src/examples/select&amp;#95;component.cljs'&gt;nil/recur&lt;/a&gt; github repo.&lt;/p&gt;
 </description>
 <pubDate>
-Sat, 29 Nov 2014 00:00:00 +0100
+Sat, 29 Nov 2014 00:00:00 +0200
 </pubDate>
 <author>
 Jonas Enlund

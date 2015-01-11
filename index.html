@@ -1,7 +1,7 @@
 <html>
   <head>
     <meta charset="utf-8"/>
-    <title>nil/recur - Controlled and Uncontrolled input </title>
+    <title>nil/recur</title>
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.1/styles/default.min.css">
@@ -42,90 +42,49 @@
             
 <div id="post">
     <div id="post-header">
-        <h2>Controlled and Uncontrolled input</h2>
-        <p class="date">December 14, 2014</p>
+        <h2>A note on pre and post conditions</h2>
+        <p class="date">January 11, 2015</p>
     </div>
     <div>
         
-        <p><a href='http://facebook.github.io/react/'>React</a> tries as much as possible to be <em>declarative</em>: The body of the <code>render</code> method is a description of the component <em>at any point in time</em>. Some input elements pose an interesting challange to this problem:</p><pre><code>&lt;input type=&quot;text&quot; value={this.props.name} onChange=... /&gt;
-</code></pre><p>Given that we specify that the value of the input is <code>this.props.value</code>, and props are treated immutably by react, what should happen if we type something into the input box? If we change the content of the input we break the declarative model of React because the specified value does not match the actual content.</p><p>In React parlance, there is a difference between <a href='http://facebook.github.io/react/docs/forms.html#controlled-components'>controlled and uncontrolled components</a>. A controlled component will always contain the value specified in the <code>value</code> attribute. Controlled components are preferred because they preserve the overall declarative nature of React. The <code>onChange</code> callback must somehow cause a re-render so that the value property can be updated:</p><pre><code>var NameInput = React.createClass&#40;{
-  render: function&#40;&#41; {
-    return &#40;
-      &lt;input type=&quot;text&quot;
-             value={this.props.name.toUpperCase&#40;&#41;}
-             onChange={this.handleChange}/&gt;
-    &#41;;
-  },
+        <p>David Nolen recently published two interesting blog posts (<a href='http://swannodette.github.io/2015/01/10/faster-validation-through-immutability/'>here</a> and  <a href='http://swannodette.github.io/2015/01/09/life-with-dynamic-typing/'>here</a>) about the usefulness of pre and post conditions. I have recently started to use quite a lot of pre/post conditions (and other assertions and invariants) in my own code and found that they really help a lot during development. This is just a short note about how one of the examples David gave can be extended to check more known properties of the function under test.</p><p>Let's use the following distance function as the running example:</p><pre><code>&#40;defn dist &#91;p0 p1&#93;
+  &#40;let &#91;a &#40;- &#40;:x p0&#41; &#40;:x p1&#41;&#41;
+        b &#40;- &#40;:y p0&#41; &#40;:y p1&#41;&#41;&#93;
+    &#40;js/Math.sqrt &#40;+ &#40;&#42; a a&#41;
+                     &#40;&#42; b b&#41;&#41;&#41;&#41;&#41;
+</code></pre><p>David showed how to add <strong>pre conditions</strong> to this function in order to do runtime type checking:</p><pre><code>&#40;defn dist &#91;p0 p1&#93;
+  {:pre &#91;&#40;point? p0&#41; &#40;point? p1&#41;&#93;}
+  ...&#41;
+</code></pre><p>This is really useful and will catch a lot bugs during development but pre and post conditions are not limited to only type checking. This example is especially illuminating since distance functions are <a href='http://en.wikipedia.org/wiki/Metric&#95;%28mathematics%29'>well studied in mathematics</a>:</p><ul><li><code>&#40;dist p0 p1&#41;</code> = <code>0</code> if and only if <code>&#40;= p0 p1&#41;</code></li><li><code>&#40;dist p0 p1&#41;</code> > <code>0</code> if and only if <code>&#40;not= p0 p1&#41;</code></li><li><code>&#40;dist p0 p1&#41;</code> = <code>&#40;dist p1 p0&#41;</code> for all points <code>p0</code> and <code>p1</code></li><li><code>&#40;dist p0 p1&#41;</code> + <code>&#40;dist p1 p2&#41;</code> >= <code>&#40;dist p0 p2&#41;</code> for all points <code>p0</code>, <code>p1</code> and <code>p2</code>.</li></ul><p>It should be quite obvious that checking the types of the input arguments has nothing to do with whether the above properties hold or not. The first two properties however lend themselves well as a post conditions:</p><pre><code>&#40;defn dist &#91;p0 p1&#93;
+  {:pre &#91;&#40;point? p0&#41; &#40;point? p1&#41;&#93;
+   :post &#91;&#40;if &#40;= p0 p1&#41;
+            &#40;zero? %&#41;
+            &#40;pos? %&#41;&#41;&#93;}
+  ...&#41;
+</code></pre><p>Note that <code>%</code> is bound to the functions return value. The expression <code>&#40;if &#40;= p0 p1&#41; &#40;zero? %&#41; &#40;pos? %&#41;&#41;</code> completely captures the first two properties of our metric function and nicely ties the input arguments to the output without having to do the actual calculation (which could introduce its own set of bugs).</p><p>The last two properties doesn't lend themselves well to pre / post conditions and are therefor better handled by external testing tools. One obvious choice in this particular case is to use <a href='https://github.com/clojure/test.check'>test.check</a>:</p><pre><code>&#40;def commutativity
+  &#40;prop/for-all &#91;p0 &#40;gen-point&#41;
+                 p1 &#40;gen-point&#41;&#93;
+    &#40;almost= &#40;dist p0 p1&#41; &#40;dist p1 p0&#41;&#41;&#41;&#41;
 
-  handleChange: function&#40;evt&#41; {
-    this.props.nameChange&#40;evt.target.value&#41;;
-  }
-}&#41;;
-
-var SomeForm = React.createClass&#40;{
-  getInitialState: function&#40;&#41; {
-    return {name: &quot;&quot;,
-            age: &quot;&quot;};
-  },
-
-  render: function&#40;&#41; {
-    return &#40;
-      &lt;ul&gt;
-       &lt;li&gt;Name: &lt;NameInput name={this.state.name}
-                            nameChange={this.handleNameChange}/&gt;&lt;/li&gt;
-       &lt;li&gt;Age: ...&lt;/li&gt;
-      &lt;/ul&gt;
-    &#41;;
-  },
-
-  handleNameChange: function&#40;name&#41; {
-    this.setState&#40;{name: name}&#41;;
-  }
-}&#41;;
-</code></pre><p>Note that the <code>NameInput</code> component is completely stateless. At any point in time, the component will display the value of <code>this.props.name.toUpperCase&#40;&#41;</code>. It is up to the <code>onChange</code> callback to decide what to do if the user types something into the box. There is no default behaviour like <em>"add the typed letter at cursor position"</em>.</p><p>React also has a concept of uncontrolled components where instead of specifying <code>value</code> you use <code>defaultValue</code> and this value will be used for the initial render and after that the textbox behaves like a standard html input element. Note that uncontrolled components breaks the declarativeness. The words <em>"initial render"</em> and <em>"after"</em> should make it clear that the render function no longer specifies how the component should render at any point in time.</p><h3><a name="input&#95;components&#95;in&#95;om"></a>Input components in Om</h3><p>While working with input elements in Om I was surprised to realize that my components did not behave like controlled components does in React. After some digging I realized that the behaviour seemed to be intentional, since <a href='https://github.com/swannodette/om/blob/master/src/om/dom.cljs#L7-L36'>Om wraps React input components in its own stateful versions</a>. The reason for this is that Om does rendering asynchronously via <code>requestAnimationFrame</code> and it turns out that React does not fully support this mode of rendering.</p><p>As an example, consider the following application:</p><pre><code>&#40;def app-state &#40;atom {:text &quot;foo&quot;}&#41;&#41;
-
-&#40;defn my-input &#91;app&#93;
-  &#40;reify
-    om/IRender
-    &#40;render &#91;this&#93;
-      &#40;dom/input
-        #js {:type &quot;text&quot;
-             :value &#40;.toUpperCase &#40;:text app&#41;&#41;
-             :onChange #&#40;if &#40;&lt; &#40;count app&#41; 10&#41;
-                          &#40;om/transact! app
-                                        :text
-                                        &#40;constantly &#40;-&gt; % .-target .-value&#41;&#41;&#41;&#41;}&#41;&#41;&#41;&#41;
-
-&#40;om/root
-  my-input
-  app-state
-  {:target &#40;. js/document &#40;getElementById &quot;app&quot;&#41;&#41;}&#41;
-</code></pre><p>If you try to run this application you will notice two interesting things</p><ol><li>The input text is kept in upper case. However, if you try to add a character to the middle of the text the cursor will jump to the last position. If there is no transformation done (i.e., <code>:value &#40;:text app&#41;</code> instead of <code>:value &#40;.toUpperCase &#40;:text app&#41;&#41;</code>) the cursor will stay at the correct position.</li><li>The app-state is updated only if the text is less that 10 characters long. It is still possible to type more characters into the input box and in that case <em>the local state of the component differs from the application state</em>.</li></ol><h3><a name="input&#95;components&#95;in&#95;reagent"></a>Input components in Reagent</h3><p>Reagent also does asynchronous rendering and as such should be battling with the same issues, and indeed <a href='https://github.com/reagent-project/reagent/blob/master/src/reagent/impl/template.cljs#L82-L140'>it does</a>. I have not yet been able to completely understand this implementation but it seems like an attempt to keep the semantics of Reacts controlled components even in the case of asynchronous rendering.</p><p>It seems like this is not an easy task. For example, if you try this short reagent code snippet (which is very similar to the Om example above)</p><pre><code>&#40;defn my-input &#91;on-change text&#93;
-  &#91;:div &#91;:input {:type &quot;text&quot;
-                 :value &#40;.toUpperCase text&#41;
-                 :on-change #&#40;if &#40;&lt; &#40;count text&#41; 10&#41;
-                               &#40;on-change &#40;-&gt; % .-target .-value&#41;&#41;&#41;}&#93;&#93;&#41;
-
-&#40;def text &#40;reagent/atom &quot;foo&quot;&#41;&#41;
-
-&#40;defn main-page &#91;&#93;
-  &#91;my-input #&#40;reset! text %&#41; @text&#93;&#41;
-
-&#40;defn init! &#91;&#93;
-  &#40;reagent/render-component &#91;main-page&#93; &#40;.getElementById js/document &quot;app&quot;&#41;&#41;&#41;
-</code></pre><ol><li>You will notice the same behaviour as in the Om example: If you type a character in the middle of the text the cursor jumps to the last position.</li><li>The state of the <code>text</code> atom and the rendered text in the component seems to be kept in sync since it is not possible to type more than 10 characters into the input box.</li></ol><h3><a name="conclusions"></a>Conclusions</h3><p>It is unfortunate that asynchronous rendering does not work properly in React. However, this is hardly the fault of React, since they are pretty clear in their communication with the community that rendering with <code>requestAnimationFrame</code> is simply <a href='https://groups.google.com/forum/#!msg/reactjs/LkTihnf6Ey8/FgFvvf33GckJ'>not supported</a>:</p><blockquote><p> Let me repeat myself: rAF batching is not supported. It is not a priority for us because it does not solve any real problems that I know of and makes things much harder to reason about. </p></blockquote><p>It is interesting that the various Clojurescript React wrappers choose async rendering as their model when the underlying library that they rely on does not fully support it.</p>
+&#40;def triangle-inequality
+  &#40;prop/for-all &#91;p0 &#40;gen-point&#41;
+                 p1 &#40;gen-point&#41;
+                 p2 &#40;gen-point&#41;&#93;
+    &#40;&gt;= &#40;+ &#40;dist p0 p1&#41; &#40;dist p1 p2&#41;&#41;
+        &#40;dist p0 p3&#41;&#41;&#41;&#41;
+</code></pre><p>All tools that help us create reliable software should be carefully evaluated and used when appropriate. I'm happy to have put pre/post in my own toolbelt.</p>
     </div>
     
     <div id="tags">
         <b>Tags: </b>
         
-        <a href="/nil-recur/tags/Reagent.html">Reagent</a>
+        <a href="/nil-recur/tags/test.check.html">test.check</a>
         
-        <a href="/nil-recur/tags/requestAnimationFrame.html">requestAnimationFrame</a>
+        <a href="/nil-recur/tags/Design by Contract.html">Design by Contract</a>
         
-        <a href="/nil-recur/tags/Om.html">Om</a>
+        <a href="/nil-recur/tags/Pre &amp; post conditions.html">Pre &amp; post conditions</a>
         
-        <a href="/nil-recur/tags/React.html">React</a>
+        <a href="/nil-recur/tags/Clojure.html">Clojure</a>
         
     </div>
     
@@ -135,7 +94,7 @@ var SomeForm = React.createClass&#40;{
         
         
         
-        <a href="/nil-recur/posts/7-12-2014-om-table.html">Reusable Om components, part 2 &raquo;</a>
+        <a href="/nil-recur/posts/14-12-2014-controlled-input.html">Controlled and Uncontrolled input &raquo;</a>
         
     </div>
 </div>
@@ -155,11 +114,11 @@ var SomeForm = React.createClass&#40;{
               <h3>Recent Posts</h3>
               <ul>
                 
+                <li><a href="/nil-recur/posts/11-1-2015-pre-post-conditions.html">A note on pre and post conditions</a></li>
+                
                 <li><a href="/nil-recur/posts/14-12-2014-controlled-input.html">Controlled and Uncontrolled input</a></li>
                 
                 <li><a href="/nil-recur/posts/7-12-2014-om-table.html">Reusable Om components, part 2</a></li>
-                
-                <li><a href="/nil-recur/posts/29-11-2014-om-select.html">Reusable Om components, part 1</a></li>
                 
               </ul>
             </div>
@@ -176,6 +135,14 @@ var SomeForm = React.createClass&#40;{
                 <li><a href="/nil-recur/tags/requestAnimationFrame.html">requestAnimationFrame</a></li>
                 
                 <li><a href="/nil-recur/tags/Reagent.html">Reagent</a></li>
+                
+                <li><a href="/nil-recur/tags/Clojure.html">Clojure</a></li>
+                
+                <li><a href="/nil-recur/tags/Pre &amp; post conditions.html">Pre &amp; post conditions</a></li>
+                
+                <li><a href="/nil-recur/tags/Design by Contract.html">Design by Contract</a></li>
+                
+                <li><a href="/nil-recur/tags/test.check.html">test.check</a></li>
                 
               </ul>
             </div>
