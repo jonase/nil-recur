@@ -15,7 +15,7 @@ http://jonase.github.io
 Ramblings about programming
 </description>
 <lastBuildDate>
-Sun, 11 Jan 2015 18:08:12 +0200
+Sun, 11 Jan 2015 21:06:27 +0200
 </lastBuildDate>
 <author>
 Jonas Enlund
@@ -55,7 +55,7 @@ A note on pre and post conditions
                  p1 &amp;#40;gen-point&amp;#41;
                  p2 &amp;#40;gen-point&amp;#41;&amp;#93;
     &amp;#40;&amp;gt;= &amp;#40;+ &amp;#40;dist p0 p1&amp;#41; &amp;#40;dist p1 p2&amp;#41;&amp;#41;
-        &amp;#40;dist p0 p3&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+        &amp;#40;dist p0 p2&amp;#41;&amp;#41;&amp;#41;&amp;#41;
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;All tools that help us create reliable software should be carefully evaluated and used when appropriate. I'm happy to have put pre/post in my own toolbelt.&lt;/p&gt;
 </description>
 <pubDate>
