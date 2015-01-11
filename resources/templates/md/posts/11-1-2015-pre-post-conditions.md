@@ -56,7 +56,7 @@ The last two properties doesn't lend themselves well to pre / post conditions an
                  p1 (gen-point)
                  p2 (gen-point)]
     (>= (+ (dist p0 p1) (dist p1 p2))
-        (dist p0 p3))))
+        (dist p0 p2))))
 ```
 
 All tools that help us create reliable software should be carefully evaluated and used when appropriate. I'm happy to have put pre/post in my own toolbelt.
