@@ -2,7 +2,7 @@
 <urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/archives.html
+http://jonase.github.ionil-recur/archives.html
 </loc>
 <lastmod>
 2015-01-11
@@ -10,7 +10,7 @@ http://blogawesome.com/nil-recur/archives.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/index.html
+http://jonase.github.ionil-recur/index.html
 </loc>
 <lastmod>
 2015-01-11
@@ -18,7 +18,7 @@ http://blogawesome.com/nil-recur/index.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/pages/about.html
+http://jonase.github.ionil-recur/pages/about.html
 </loc>
 <lastmod>
 2015-01-11
@@ -26,7 +26,7 @@ http://blogawesome.com/nil-recur/pages/about.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/posts/11-1-2015-pre-post-conditions.html
+http://jonase.github.ionil-recur/posts/11-1-2015-pre-post-conditions.html
 </loc>
 <lastmod>
 2015-01-11
@@ -34,7 +34,7 @@ http://blogawesome.com/nil-recur/posts/11-1-2015-pre-post-conditions.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/posts/14-12-2014-controlled-input.html
+http://jonase.github.ionil-recur/posts/14-12-2014-controlled-input.html
 </loc>
 <lastmod>
 2015-01-11
@@ -42,7 +42,7 @@ http://blogawesome.com/nil-recur/posts/14-12-2014-controlled-input.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/posts/29-11-2014-om-select.html
+http://jonase.github.ionil-recur/posts/29-11-2014-om-select.html
 </loc>
 <lastmod>
 2015-01-11
@@ -50,7 +50,7 @@ http://blogawesome.com/nil-recur/posts/29-11-2014-om-select.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
+http://jonase.github.ionil-recur/posts/7-12-2014-om-table.html
 </loc>
 <lastmod>
 2015-01-11
@@ -58,7 +58,7 @@ http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/tags/Clojure.html
+http://jonase.github.ionil-recur/tags/Clojure.html
 </loc>
 <lastmod>
 2015-01-11
@@ -66,7 +66,7 @@ http://blogawesome.com/nil-recur/tags/Clojure.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/tags/Clojurescript.html
+http://jonase.github.ionil-recur/tags/Clojurescript.html
 </loc>
 <lastmod>
 2015-01-11
@@ -74,7 +74,7 @@ http://blogawesome.com/nil-recur/tags/Clojurescript.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/tags/Design by Contract.html
+http://jonase.github.ionil-recur/tags/Design by Contract.html
 </loc>
 <lastmod>
 2015-01-11
@@ -82,7 +82,7 @@ http://blogawesome.com/nil-recur/tags/Design by Contract.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/tags/Om.html
+http://jonase.github.ionil-recur/tags/Om.html
 </loc>
 <lastmod>
 2015-01-11
@@ -90,7 +90,7 @@ http://blogawesome.com/nil-recur/tags/Om.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/tags/Pre & post conditions.html
+http://jonase.github.ionil-recur/tags/Pre & post conditions.html
 </loc>
 <lastmod>
 2015-01-11
@@ -98,7 +98,7 @@ http://blogawesome.com/nil-recur/tags/Pre & post conditions.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/tags/React.html
+http://jonase.github.ionil-recur/tags/React.html
 </loc>
 <lastmod>
 2015-01-11
@@ -106,7 +106,7 @@ http://blogawesome.com/nil-recur/tags/React.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/tags/Reagent.html
+http://jonase.github.ionil-recur/tags/Reagent.html
 </loc>
 <lastmod>
 2015-01-11
@@ -114,7 +114,7 @@ http://blogawesome.com/nil-recur/tags/Reagent.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/tags/requestAnimationFrame.html
+http://jonase.github.ionil-recur/tags/requestAnimationFrame.html
 </loc>
 <lastmod>
 2015-01-11
@@ -122,7 +122,7 @@ http://blogawesome.com/nil-recur/tags/requestAnimationFrame.html
 </url>
 <url>
 <loc>
-http://blogawesome.com/nil-recur/tags/test.check.html
+http://jonase.github.ionil-recur/tags/test.check.html
 </loc>
 <lastmod>
 2015-01-11

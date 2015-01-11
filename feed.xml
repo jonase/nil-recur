@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <rss version='2.0' xmlns:atom='http://www.w3.org/2005/Atom'>
 <channel>
-<atom:link href='http://blogawesome.com/' rel='self' type='application/rss+xml'/>
+<atom:link href='http://jonase.github.io' rel='self' type='application/rss+xml'/>
 <generator>
 clj-rss
 </generator>
@@ -9,23 +9,23 @@ clj-rss
 nil/recur
 </title>
 <link>
-http://blogawesome.com/
+http://jonase.github.io
 </link>
 <description>
 Ramblings about programming
 </description>
 <lastBuildDate>
-Sun, 11 Jan 2015 17:59:26 +0200
+Sun, 11 Jan 2015 18:08:12 +0200
 </lastBuildDate>
 <author>
 Jonas Enlund
 </author>
 <item>
 <guid>
-http://blogawesome.com/nil-recur/posts/11-1-2015-pre-post-conditions.html
+http://jonase.github.io/nil-recur/posts/11-1-2015-pre-post-conditions.html
 </guid>
 <link>
-http://blogawesome.com/nil-recur/posts/11-1-2015-pre-post-conditions.html
+http://jonase.github.io/nil-recur/posts/11-1-2015-pre-post-conditions.html
 </link>
 <title>
 A note on pre and post conditions
@@ -67,10 +67,10 @@ Jonas Enlund
 </item>
 <item>
 <guid>
-http://blogawesome.com/nil-recur/posts/14-12-2014-controlled-input.html
+http://jonase.github.io/nil-recur/posts/14-12-2014-controlled-input.html
 </guid>
 <link>
-http://blogawesome.com/nil-recur/posts/14-12-2014-controlled-input.html
+http://jonase.github.io/nil-recur/posts/14-12-2014-controlled-input.html
 </link>
 <title>
 Controlled and Uncontrolled input
@@ -153,10 +153,10 @@ Jonas Enlund
 </item>
 <item>
 <guid>
-http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
+http://jonase.github.io/nil-recur/posts/7-12-2014-om-table.html
 </guid>
 <link>
-http://blogawesome.com/nil-recur/posts/7-12-2014-om-table.html
+http://jonase.github.io/nil-recur/posts/7-12-2014-om-table.html
 </link>
 <title>
 Reusable Om components, part 2
@@ -301,10 +301,10 @@ Jonas Enlund
 </item>
 <item>
 <guid>
-http://blogawesome.com/nil-recur/posts/29-11-2014-om-select.html
+http://jonase.github.io/nil-recur/posts/29-11-2014-om-select.html
 </guid>
 <link>
-http://blogawesome.com/nil-recur/posts/29-11-2014-om-select.html
+http://jonase.github.io/nil-recur/posts/29-11-2014-om-select.html
 </link>
 <title>
 Reusable Om components, part 1
