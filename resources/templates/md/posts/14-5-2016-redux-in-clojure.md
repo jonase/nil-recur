@@ -12,7 +12,7 @@ many Clojure programmers.
 
 At the highest level Redux works like this:
 
-![Redux](img/redux01.png)
+![Redux](/nil-recur/img/redux01.png)
 
 There is a single (often huge) state object which the UI uses for
 rendering. The UI emits actions that are fed into the reducer which
@@ -24,7 +24,7 @@ tree. It also often makes sense for the redux state object to be
 represented as some kind of tree. A more complete picture of the
 relation between Redux and React might look like this:
 
-![Redux](img/redux02.png)
+![Redux](/nil-recur/img/redux02.png)
 
 Note in particular that the shape of the state tree does not have to
 correspond to the shape of the render tree. It is often wise to try to
