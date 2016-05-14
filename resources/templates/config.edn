@@ -1,4 +1,5 @@
-{:site-title       "nil/recur"
+{
+ :site-title       "nil/recur"
  :author           "Jonas Enlund"
  :description      "Ramblings about programming"
  :site-url         "http://jonase.github.io"
