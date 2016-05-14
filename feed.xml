@@ -15,11 +15,199 @@ http://jonase.github.io
 Ramblings about programming
 </description>
 <lastBuildDate>
-Sun, 11 Jan 2015 21:06:27 +0200
+Sat, 14 May 2016 21:23:25 +0300
 </lastBuildDate>
 <author>
 Jonas Enlund
 </author>
+<item>
+<guid>
+http://jonase.github.io/nil-recur/posts/14-5-2016-redux-in-clojure.html
+</guid>
+<link>
+http://jonase.github.io/nil-recur/posts/14-5-2016-redux-in-clojure.html
+</link>
+<title>
+Redux reducers in Clojure
+</title>
+<description>
+&lt;p&gt;&lt;a href='http://redux.js.org/'&gt;Redux&lt;/a&gt; is a Javascript library with an interesting approach to doing client side state management. It is inspired by the &lt;a href='https://facebook.github.io/flux/docs/overview.html'&gt;Flux architecture&lt;/a&gt; and is most often used in combination with &lt;a href='https://facebook.github.io/react/'&gt;React&lt;/a&gt;. Redux takes a very functional approach to state management which could potentially be interesting to many Clojure programmers.&lt;/p&gt;&lt;p&gt;At the highest level Redux works like this:&lt;/p&gt;&lt;p&gt;&lt;img src=&quot;img/redux01.png&quot; alt=&quot;Redux&quot; /&gt;&lt;/p&gt;&lt;p&gt;There is a single (often huge) state object which the UI uses for rendering. The UI emits actions that are fed into the reducer which together with the current state object produces the next state for the UI to render.&lt;/p&gt;&lt;p&gt;We know that in React the user interface is modelled as a render tree. It also often makes sense for the redux state object to be represented as some kind of tree. A more complete picture of the relation between Redux and React might look like this:&lt;/p&gt;&lt;p&gt;&lt;img src=&quot;img/redux02.png&quot; alt=&quot;Redux&quot; /&gt;&lt;/p&gt;&lt;p&gt;Note in particular that the shape of the state tree does not have to correspond to the shape of the render tree. It is often wise to try to keep the state tree as normalized as possible to avoid duplication. The render tree on the other hand will have a shape similar to whatever the visual design dictates.&lt;/p&gt;&lt;p&gt;In redux there is a single function (the reducer in the image above, sometimes called the &quot;root&quot; reducer for reasons that will be explained later in the post) whose job is to create new states based on all the possible actions the user interface emits. This might easily become a maintenance nightmare if not handled with care. Redux comes bundled with a function, called &lt;code&gt;combineReducers&lt;/code&gt; that helps you split up the root reducer in interesting ways. The rest of this post examines this function from a Clojure point of view.&lt;/p&gt;&lt;p&gt;Let's start with an example. Imagine we are building some kind of email client. Our email client will manage contacts, the inbox and the emails that are sent. We will have functions for adding and removing contacts:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;defn add-contact
+  &amp;#91;contacts contact&amp;#93;
+  &amp;#40;assoc contacts &amp;#40;:id contact&amp;#41; contact&amp;#41;&amp;#41;
+
+&amp;#40;defn remove-contact
+  &amp;#91;contacts {:keys &amp;#91;id&amp;#93;}&amp;#93;
+  &amp;#40;dissoc contacts id&amp;#41;&amp;#41;
+
+&amp;#40;-&amp;gt; {}
+    &amp;#40;add-contact {:id 101 :email &amp;quot;vastra@example.com&amp;quot;}&amp;#41;
+    &amp;#40;add-contact {:id 102 :email &amp;quot;flint@example.com&amp;quot;}&amp;#41;
+    &amp;#40;add-contact {:id 103 :email &amp;quot;strax@example.com&amp;quot;}&amp;#41;
+    &amp;#40;remove-contact {:id 102}&amp;#41;&amp;#41;
+
+;;=&amp;gt; {101 {:id 101, :email &amp;quot;vastra@example.com&amp;quot;},
+;;    103 {:id 103, :email &amp;quot;strax@example.com&amp;quot;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Note that both add-contact and remove-contact could be used as reducing functions where the &lt;code&gt;contacts&lt;/code&gt; argument would be the accumulator and second &lt;code&gt;contact&lt;/code&gt; argument would be the next element to be ingested.&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;reduce add-contact
+        {}
+        &amp;#91;{:id 101 :email &amp;quot;vastra@example.com&amp;quot;}
+         {:id 102 :email &amp;quot;flint@example.com&amp;quot;}
+         {:id 103 :email &amp;quot;strax@example.com&amp;quot;}&amp;#93;&amp;#41;
+
+;;=&amp;gt; {101 {:id 101, :email &amp;quot;vastra@example.com&amp;quot;},
+;;    102 {:id 102, :email &amp;quot;flint@example.com&amp;quot;},
+;;    103 {:id 103, :email &amp;quot;strax@example.com&amp;quot;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Let's create a single function &lt;code&gt;contacts-reducer&lt;/code&gt; that combines &lt;code&gt;add-contact&lt;/code&gt; and &lt;code&gt;remove-contact&lt;/code&gt; into a single reducing function.&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;defn contacts-reducer
+  &amp;#91;contacts {:keys &amp;#91;type payload&amp;#93;}&amp;#93;
+  &amp;#40;condp = type
+    :add-contact &amp;#40;add-contact contacts payload&amp;#41;
+    :remove-contact &amp;#40;remove-contact contacts payload&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;reduce contacts-reducer
+        {}
+        &amp;#91;{:type :add-contact
+          :payload {:id 101 :email &amp;quot;vastra@example.com&amp;quot;}}
+         {:type :add-contact
+          :payload {:id 102 :email &amp;quot;flint@example.com&amp;quot;}}
+         {:type :remove-contact
+          :payload {:id 101}}
+         {:type :add-contact
+          :payload {:id 103 :email &amp;quot;strax@example.com&amp;quot;}}&amp;#93;&amp;#41;
+;;=&amp;gt; {102 {:id 102, :email &amp;quot;flint@example.com&amp;quot;},
+;;    103 {:id 103, :email &amp;quot;strax@example.com&amp;quot;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Note that we use a type tag to be able to figure out which function to call. A map like&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;{:type :add-contact
+ :payload {:id 102 :email &amp;quot;flint@example.com&amp;quot;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;is called an &quot;action&quot; in Redux. The only requirement is the presence of the type tag. Otherwise the object can have any shape and keys. In this post I will always use the &lt;code&gt;:payload&lt;/code&gt; key which will hold the data for the reducing functions.&lt;/p&gt;&lt;p&gt;Redux also adds a few requirements to the reducing functions themselves:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;If the action type is unknown, return the state unchanged.&lt;/li&gt;&lt;li&gt;If the state is &lt;code&gt;undefined&lt;/code&gt;, return the initial state for this reducer.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;The &lt;code&gt;undefined&lt;/code&gt; part doesn't translate well to Clojure. Instead we'll take some inspiration from &lt;a href='http://clojure.org/reference/transducers'&gt;transducers&lt;/a&gt; (an eerily similar concept to Redux reducers) where the initial state is obtained by calling the reducing function without arguments.&lt;/p&gt;&lt;p&gt;Let's rewrite &lt;code&gt;contacts-reducer&lt;/code&gt; to follow these simple rules:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;defn contacts-reducer
+  &amp;#40;&amp;#91;&amp;#93; {}&amp;#41;
+  &amp;#40;&amp;#91;contacts {:keys &amp;#91;type payload&amp;#93;}&amp;#93;
+   &amp;#40;condp = type
+     :add-contact &amp;#40;add-contact contacts payload&amp;#41;
+     :remove-contact &amp;#40;remove-contact contacts payload&amp;#41;
+     contacts&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;contacts-reducer&amp;#41;
+;;=&amp;gt; {}
+
+&amp;#40;contacts-reducer {:will &amp;quot;not change&amp;quot;} {:type :unknown-action}&amp;#41;
+;;=&amp;gt; {:will &amp;quot;not change&amp;quot;}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;To illustrate the point of Redux's &lt;code&gt;combineReducers&lt;/code&gt; function we'll need a few other reducer functions as well. For managing the inbox we have:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;defn add-to-inbox &amp;#91;inbox email&amp;#93;
+  &amp;#40;conj inbox email&amp;#41;&amp;#41;
+
+&amp;#40;defn remove-from-inbox &amp;#91;inbox email&amp;#93;
+  &amp;#40;disj inbox email&amp;#41;&amp;#41;
+
+&amp;#40;defn inbox-reducer
+  &amp;#40;&amp;#91;&amp;#93; #{}&amp;#41;
+  &amp;#40;&amp;#91;inbox {:keys &amp;#91;type payload&amp;#93;}&amp;#93;
+   &amp;#40;condp = type
+     :add-to-inbox &amp;#40;add-to-inbox inbox payload&amp;#41;
+     :remove-from-inbox &amp;#40;remove-from-inbox inbox payload&amp;#41;
+     inbox&amp;#41;&amp;#41;&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The inbox is just a set of email messages. We have also defined an &lt;code&gt;inbox-reducer&lt;/code&gt; that's able to add and remove emails from the inbox:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;let &amp;#91;initial-state &amp;#40;inbox-reducer&amp;#41;
+      actions &amp;#91;{:type :add-to-inbox
+                :payload {:from &amp;quot;vastra@example.com&amp;quot;
+		          :title &amp;quot;Hello&amp;quot;
+			  :body &amp;quot;...&amp;quot;}}
+               {:type :add-to-inbox
+                :payload {:from &amp;quot;flint@example.com&amp;quot;
+		          :title &amp;quot;Lunch?&amp;quot;
+			  :body &amp;quot;...&amp;quot;}}
+               {:type :remove-from-inbox
+                :payload {:from &amp;quot;vastra@example.com&amp;quot;
+		          :title &amp;quot;Hello&amp;quot;
+			  :body &amp;quot;...&amp;quot;}}&amp;#93;&amp;#93;
+  &amp;#40;reduce inbox-reducer
+          initial-state
+          actions&amp;#41;&amp;#41;
+
+;;=&amp;gt; #{{:from &amp;quot;flint@example.com&amp;quot;, :title &amp;quot;Lunch?&amp;quot;, :body &amp;quot;...&amp;quot;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The final reducer we'll use is the one that manages the &quot;sent&quot; emails. We'll just handle a single action type for this reducer so we'll simply inline the implementation:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;defn sent-reducer
+  &amp;#40;&amp;#91;&amp;#93; &amp;#91;&amp;#93;&amp;#41;
+  &amp;#40;&amp;#91;state action&amp;#93;
+   &amp;#40;if &amp;#40;= &amp;#40;:type action&amp;#41; :email-sent&amp;#41;
+     &amp;#40;conj state &amp;#40;:payload action&amp;#41;&amp;#41;
+     state&amp;#41;&amp;#41;&amp;#41;
+
+&amp;#40;let &amp;#91;initial-state &amp;#40;sent-reducer&amp;#41;
+      actions &amp;#91;{:type :email-sent
+                :payload {:to &amp;quot;strax@example.com&amp;quot;
+		          :title &amp;quot;Hi!&amp;quot;
+			  :body &amp;quot;...&amp;quot;}}
+               {:type :email-sent
+                :payload {:to &amp;quot;vastra@example.com&amp;quot;
+		          :title &amp;quot;Hello&amp;quot;
+			  :body &amp;quot;...&amp;quot;}}&amp;#93;&amp;#93;
+  &amp;#40;reduce sent-reducer
+          initial-state
+          actions&amp;#41;&amp;#41;
+
+;;=&amp;gt; &amp;#91;{:to &amp;quot;strax@example.com&amp;quot;, :title &amp;quot;Hi!&amp;quot;, :body &amp;quot;...&amp;quot;}
+;;    {:to &amp;quot;vastra@example.com&amp;quot;, :title &amp;quot;Hello&amp;quot;, :body &amp;quot;...&amp;quot;}&amp;#93;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The Redux &lt;code&gt;combineReducer&lt;/code&gt; is a higher order function that takes a map where the keys corresponds to keys in the state tree and the values are the reducers that manages that part of the state. The function returns a reducing function which is important for composability.&lt;/p&gt;&lt;p&gt;If we think about the state that our application will manage it could look something like&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;{:contacts {101 { .. first contact ..}
+            102 { .. another contact ..}
+	    ;; etc
+	    199 { .. last contact ..}}
+ :emails {:inbox #{ .. set of emails in the inbox .. }
+          :sent &amp;#91; .. list of sent emails &amp;#93;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;With &lt;code&gt;combine-reducers&lt;/code&gt; we'll be able to create a (root) reducer that maintains the structure above and is built using the reducers we've been defining previously. Let's define the &lt;code&gt;root-reducer&lt;/code&gt; using (the as of yet to be implemented) &lt;code&gt;combine-reducers&lt;/code&gt;:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;def root-reducer
+  &amp;#40;combine-reducers {:contacts contacts-reducer
+                     :emails &amp;#40;combine-reducers {:inbox inbox-reducer
+                                                :sent sent-reducer}&amp;#41;}&amp;#41;&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The &lt;code&gt;root-reducer&lt;/code&gt; follows the same contract as the rest of the reducers:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;root-reducer&amp;#41;
+;;=&amp;gt; {:contacts {}, :emails {:inbox #{}, :sent &amp;#91;&amp;#93;}}
+
+
+&amp;#40;root-reducer &amp;#40;root-reducer&amp;#41; {:type :unknown-action}&amp;#41;
+;;=&amp;gt; {:contacts {}, :emails {:inbox #{}, :sent &amp;#91;&amp;#93;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Note how the initial value is built using both the map structure as well as the &quot;leaf&quot; reducers initial values.&lt;/p&gt;&lt;p&gt;We can now use the &lt;code&gt;root-reducer&lt;/code&gt; with all the actions we've defined&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;let &amp;#91;initial-state &amp;#40;root-reducer&amp;#41;
+      actions &amp;#91;{:type :email-sent
+                :payload {:to &amp;quot;strax@example.com&amp;quot;
+		          :title &amp;quot;Hi!&amp;quot;
+			  :body &amp;quot;...&amp;quot;}}
+               {:type :add-contact
+                :payload {:id 101 :email &amp;quot;vastra@example.com&amp;quot;}}
+               {:type :add-to-inbox
+                :payload {:from &amp;quot;strax@example.com&amp;quot;
+		          :title &amp;quot;Reply: Hi!&amp;quot;
+			  :body &amp;quot;...&amp;quot;}}
+               {:type :add-contact
+                :payload {:id 102 :email &amp;quot;flint@example.com&amp;quot;}}
+               {:type :remove-contact
+                :payload {:id 101}}
+               {:type :add-contact
+                :payload {:id 103 :email &amp;quot;strax@example.com&amp;quot;}}&amp;#93;&amp;#93;
+  &amp;#40;reduce root-reducer
+          initial-state
+          actions&amp;#41;&amp;#41;
+
+;;=&amp;gt; {:contacts {102 {:id 102, :email &amp;quot;flint@example.com&amp;quot;},
+;;               103 {:id 103, :email &amp;quot;strax@example.com&amp;quot;}},
+;;    :emails {:inbox #{{:from &amp;quot;strax@example.com&amp;quot;,
+;;                       :title &amp;quot;Reply: Hi!&amp;quot;,
+;;                       :body &amp;quot;...&amp;quot;}},
+;;             :sent &amp;#91;{:to &amp;quot;strax@example.com&amp;quot;,
+;;                     :title &amp;quot;Hi!&amp;quot;,
+;;                     :body &amp;quot;...&amp;quot;}&amp;#93;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The implementation of &lt;code&gt;combine-reducer&lt;/code&gt; looks like follows:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;clojure&quot;&gt;&amp;#40;defn combine-reducers &amp;#91;reducer-map&amp;#93;
+  &amp;#40;fn
+    &amp;#40;&amp;#91;&amp;#93;
+     &amp;#40;reduce &amp;#40;fn &amp;#91;acc &amp;#91;key reducing-fn&amp;#93;&amp;#93;
+               &amp;#40;assoc acc key &amp;#40;reducing-fn&amp;#41;&amp;#41;&amp;#41;
+             {}
+             reducer-map&amp;#41;&amp;#41;
+    &amp;#40;&amp;#91;state action&amp;#93;
+     &amp;#40;reduce &amp;#40;fn &amp;#91;acc &amp;#91;key reducing-fn&amp;#93;&amp;#93;
+               &amp;#40;update acc key reducing-fn action&amp;#41;&amp;#41;
+             state
+             reducer-map&amp;#41;&amp;#41;&amp;#41;&amp;#41;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Note that the argument lists are the same as for all the other reducers. We build the initial value by reducing over the &lt;code&gt;reducer-map&lt;/code&gt; and call the corresponding &lt;code&gt;reducer-fn&lt;/code&gt; with no arguments to obtain that part of the initial value. The two argument version is also a reduction over the &lt;code&gt;reducer-map&lt;/code&gt;. In this case we update the value under the key by calling what amounts to &lt;code&gt;&amp;#40;reducing-fn &amp;#40;get acc key&amp;#41; action&amp;#41;&lt;/code&gt;. Note also that the top reduction uses the &lt;code&gt;state&lt;/code&gt; as the initial value.&lt;/p&gt;&lt;p&gt;I found the &lt;code&gt;combine-reducers&lt;/code&gt; function really interesting to study and reimplement in Clojure. I have not seen a similar function used in a Clojure context before.&lt;/p&gt;&lt;p&gt;I also find it amazing how essential functional programming has become to client side Javascript in 2016 with the rise of React and Redux (and others). I hope I've been able to show how functional programming ideas are at the very heart of how Redux works.&lt;/p&gt;
+</description>
+<pubDate>
+Sat, 14 May 2016 00:00:00 +0300
+</pubDate>
+<author>
+Jonas Enlund
+</author>
+</item>
 <item>
 <guid>
 http://jonase.github.io/nil-recur/posts/11-1-2015-pre-post-conditions.html
