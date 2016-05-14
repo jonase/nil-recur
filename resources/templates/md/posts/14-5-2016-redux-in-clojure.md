@@ -2,6 +2,7 @@
  :layout :post
  :tags  ["Clojure" "React" "Redux"]}
 
+
 [Redux](http://redux.js.org/) is a Javascript library with an
 interesting approach to doing client side state management. It is
 inspired by the [Flux architecture](https://facebook.github.io/flux/docs/overview.html) and
