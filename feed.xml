@@ -15,11 +15,193 @@ http://jonase.github.io
 Ramblings about programming
 </description>
 <lastBuildDate>
-Sat, 14 May 2016 21:42:26 +0300
+Wed, 25 May 2016 17:49:06 +0300
 </lastBuildDate>
 <author>
 Jonas Enlund
 </author>
+<item>
+<guid>
+http://jonase.github.io/nil-recur/posts/21-5-2016-reducer-composition-in-reason.html
+</guid>
+<link>
+http://jonase.github.io/nil-recur/posts/21-5-2016-reducer-composition-in-reason.html
+</link>
+<title>
+Reducer composition in Reason
+</title>
+<description>
+&lt;p&gt;&lt;a href='http://facebook.github.io/reason/'&gt;Reason&lt;/a&gt; is a new syntax and set of developer tools for the &lt;a href='https://ocaml.org/'&gt;OCaml&lt;/a&gt; programming language. Of all the statically typed functional languages available I've always found OCaml the most interesting. OCaml (and I hope, by extension Reason) seems to be a very pragmatic language, used in many real world situations (&lt;a href='http://www.fftw.org/'&gt;fftw&lt;/a&gt;, &lt;a href='https://mirage.io/'&gt;mirage&lt;/a&gt;, &lt;a href='http://flowtype.org/'&gt;flow&lt;/a&gt; etc.) in a wide variety of fields. There is also really &lt;a href='https://ocaml.org/learn/books.html'&gt;good online learning materials&lt;/a&gt; for beginners like myself. When Reason was released last week I couldn't wait to dig in and learn more about both Reason itself and the underlying concepts in OCaml.&lt;/p&gt;&lt;p&gt;A word of warning: I am not very familiar with statically typed functional programming. I've dabbled a little bit in Haskell, OCaml and Elm but never created anything substantial. Different languages often solve problems in very different ways and what I've attempted in this post might very well be something you would never do in this kind of programming language. This is a learning exercise for me and I have not much prior experience to guide me.&lt;/p&gt;&lt;p&gt;The problem I'm trying to solve is the same one as in my previous post (&lt;a href='http://jonase.github.io/nil-recur/posts/14-5-2016-redux-in-clojure.html'&gt;Redux reducers in Clojure&lt;/a&gt;) which is a reimplementation of the &lt;a href='http://redux.js.org/docs/api/combineReducers.html'&gt;&lt;code&gt;combineReducers&lt;/code&gt;&lt;/a&gt; function from the &lt;a href='http://redux.js.org/'&gt;redux&lt;/a&gt; library.&lt;/p&gt;&lt;p&gt;The idea is that you have a potentially large immutable &lt;code&gt;store&lt;/code&gt; and a &lt;code&gt;reducer&lt;/code&gt; function which, given some &lt;code&gt;action&lt;/code&gt; will create a new version of the &lt;code&gt;store&lt;/code&gt;.&lt;/p&gt;&lt;p&gt;The store can contain many different kinds of entities but often has a rigid base structure. In this example the store looks kind of like&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;javascript&quot;&gt;{
+  contacts: &amp;#95;
+  emails: {
+    inbox: &amp;#95;
+    sent: &amp;#95;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;There are also many different types of actions, for example&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Add an email to the inbox&lt;/li&gt;&lt;li&gt;Remove a contact&lt;/li&gt;&lt;li&gt;etc.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;To recap: There is one immutable store and one reducer function which should handle many different types of actions and route the desired update to the correct position in the store.&lt;/p&gt;&lt;p&gt;The challenge is to somehow build this top level reducer function out of smaller pieces in an attempt to keep things more manageable. This is solved quite elegantly in redux with its &lt;code&gt;combineReducer&lt;/code&gt; higher level function. You create smaller reducer functions and combine them into the top level one:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;javascript&quot;&gt;const rootReducer = combineReducers&amp;#40;{
+  contacts: contactsReducer,
+  emails: combineReducers&amp;#40;{
+    inbox: inboxReducer,
+    sent: sentReducer
+  }&amp;#41;
+}&amp;#41;;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;But enough with the Javascript. This post will attempt to build something similar in Reason.&lt;/p&gt;&lt;p&gt;In Clojure (and Javascript) you often use heterogeneous collections such as maps, vectors and sets to represent things like (in this example) contacts and emails. This has the advantage that you can jump straight to the implementation. In a statically typed language like Reason you instead invest more time in modelling and specifying the data types your program handles. The hope is that the result will be less prone to certain kinds of type related bugs. With data and function types rigourously specified the code can perhaps even be more maintainable as many design decisions are more explicit.&lt;/p&gt;&lt;h3&gt;&lt;a name=&quot;domain&amp;#95;types&quot;&gt;&lt;/a&gt;Domain types&lt;/h3&gt;&lt;p&gt;A &lt;code&gt;contact&lt;/code&gt; is a &lt;a href='https://facebook.github.io/reason/#syntax-basics-records'&gt;record&lt;/a&gt; with an id and an email:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;type contact = {
+  id: int64,
+  email: string
+};
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;We will model our contacts as an immutable &lt;a href='https://ocaml.org/learn/tutorials/map.html'&gt;map&lt;/a&gt; where the id of a contact maps to the contact itself. For this we need to create a new &lt;code&gt;Contacts&lt;/code&gt; module:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let module Contacts = Map.Make Int64;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The &lt;code&gt;Contacts&lt;/code&gt; module can be thought of as a map implementation specialised at handlings maps with keys of type &lt;code&gt;int64&lt;/code&gt;. This module will contain all the functions we need to add/remove contacts, and of course lookup contacts by id. I find it very interesting that you need to specify the type of the key at this point, but not the value type.&lt;/p&gt;&lt;p&gt;An &lt;code&gt;email&lt;/code&gt; is also represented as a record:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;type email = {
+  from&amp;#95;addr: string,
+  to&amp;#95;addr: string,
+  title: string,
+  body: string
+};
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;For some reason I chose in the previous post to model the inbox as a set of emails. This turned out to be an excellent challenge. Records in Reason are sortable if the corresponding values are. Since all values in our email type are strings we can use the &lt;code&gt;compare&lt;/code&gt; function directly:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let email1 = {
+  from&amp;#95;addr: &amp;quot;flint@example.com&amp;quot;,
+  to&amp;#95;addr: &amp;quot;strax@example.com&amp;quot;,
+  title: &amp;quot;Hi!&amp;quot;,
+  body: &amp;quot;...&amp;quot;
+};
+
+let email2 = {
+  from&amp;#95;addr: &amp;quot;strax@example.com&amp;quot;,
+  to&amp;#95;addr: &amp;quot;flint@example.com&amp;quot;,
+  title: &amp;quot;Re: Hi!&amp;quot;,
+  body: &amp;quot;...&amp;quot;
+};
+
+compare email1 email2;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The specific sort order doesn't actually matter for our use case but it is important that &lt;em&gt;some&lt;/em&gt; consistent sort order is defined for the sake of efficient set operations (for example, is a given email in the inbox or not).&lt;/p&gt;&lt;p&gt;To be able to create &quot;a set of emails&quot; we need to define an &lt;code&gt;Email&lt;/code&gt; module that describes how to sort emails. If we wanted to we could define our own way of sorting at this point.&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let module Email = {
+  type t = email;
+  let compare = compare;
+};
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;We can now create an &lt;code&gt;Inbox&lt;/code&gt; module which will, similarly to the &lt;code&gt;Contacts&lt;/code&gt; map above, contain a set implementation that can efficiently store and retrieve emails.&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let module Inbox = Set.Make Email;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;We will use functions like &lt;code&gt;Inbox.add&lt;/code&gt; and &lt;code&gt;Inbox.remove&lt;/code&gt; later for adding/removing emails.&lt;/p&gt;&lt;p&gt;Finally, we will also store &quot;sent&quot; emails in the &lt;code&gt;store&lt;/code&gt;. This will simply be represented as a linked list of emails (which has the type &lt;code&gt;list email&lt;/code&gt; in Reason).&lt;/p&gt;&lt;h3&gt;&lt;a name=&quot;actions&quot;&gt;&lt;/a&gt;Actions&lt;/h3&gt;&lt;p&gt;Actions will also be statically typed, modelled as &lt;a href='http://facebook.github.io/reason/#syntax-basics-variants'&gt;variants&lt;/a&gt; instead of records. We could have a single action type which lists all the possible actions, but I chose instead to split the actions into &lt;code&gt;contact&amp;#95;action&lt;/code&gt; and &lt;code&gt;inbox&amp;#95;action&lt;/code&gt;.&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;type contact&amp;#95;action =
+  | AddContact of contact
+  | RemoveContact of int64;
+
+type inbox&amp;#95;action =
+  | AddToInbox of email
+  | RemoveFromInbox of email;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;These two types are composed into a top level &lt;code&gt;action&lt;/code&gt; type:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;type action =
+  | ContactAction of contact&amp;#95;action
+  | InboxAction of inbox&amp;#95;action
+  | EmailSentAction of email;
+&lt;/code&gt;&lt;/pre&gt;&lt;h3&gt;&lt;a name=&quot;reducers&quot;&gt;&lt;/a&gt;Reducers&lt;/h3&gt;&lt;p&gt;A &quot;reducing function&quot; or &quot;reducer&quot; is the function that's the first argument to &lt;code&gt;List.fold&amp;#95;left&lt;/code&gt; (often called &lt;code&gt;reduce&lt;/code&gt; in other languages). The reducers we will write will take some piece of the &lt;code&gt;store&lt;/code&gt; as the first argument and an &lt;code&gt;action&lt;/code&gt; as the second. The result will be a new &lt;code&gt;store&lt;/code&gt; value with the action incorporated. Let's start with the &lt;code&gt;contact&amp;#95;reducer&lt;/code&gt;:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let contact&amp;#95;reducer contacts action =&amp;gt;
+  switch action {
+  | ContactAction &amp;#40;AddContact contact&amp;#41; =&amp;gt;
+    Contacts.add contact.id contact contacts
+  | ContactAction &amp;#40;RemoveContact id&amp;#41; =&amp;gt;
+    Contacts.remove id contacts
+  | &amp;#95; =&amp;gt; contacts
+  };
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The reducer takes an action of type &lt;code&gt;action&lt;/code&gt; and not the smaller type &lt;code&gt;contact&amp;#95;action&lt;/code&gt;. This is because we are modelling how reducers work in redux. The rationale is that a single action can affect many parts of the store. Say for example that the &lt;code&gt;contact&lt;/code&gt; record also contained a &lt;code&gt;count&lt;/code&gt; where we counted the number of interactions (sent and received emails). We could then hook into other kinds of actions, e.g. an &lt;code&gt;SentEmailAction&lt;/code&gt; to be able to keep that count without creating additional &lt;code&gt;InboxActions&lt;/code&gt;. Also, if the action is not handled the contacts are returned unchanged (handled byt the &quot;wildcard&quot; case &lt;code&gt;&amp;#95; =&amp;gt; contacts&lt;/code&gt;).&lt;/p&gt;&lt;p&gt;Another requirement for reducers in redux is that if the &lt;code&gt;store&lt;/code&gt; is &lt;code&gt;undefined&lt;/code&gt; the reducer should return the initial value for the store. I couldn't figure out a nice way to model this so I have to cheat a bit and define the initial state of the entire store explicitly later.&lt;/p&gt;&lt;p&gt;The &lt;code&gt;inbox&amp;#95;reducer&lt;/code&gt; works similarly but updates &lt;code&gt;Inbox&lt;/code&gt; sets instead of &lt;code&gt;Contacts&lt;/code&gt; maps:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let inbox&amp;#95;reducer inbox action =&amp;gt;
+  switch action {
+  | InboxAction ia =&amp;gt; {
+    switch ia {
+    | AddToInbox email =&amp;gt; Inbox.add email inbox
+    | RemoveFromInbox email =&amp;gt; Inbox.remove email inbox
+    }
+  | &amp;#95; =&amp;gt; inbox
+  };
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Previously, in &lt;code&gt;contacts&amp;#95;reducer&lt;/code&gt; we used only one switch statement to handle all the actions. For &lt;code&gt;inbox&amp;#95;reducer&lt;/code&gt; we're instead using nested switch statements to handle &lt;code&gt;InboxActions&lt;/code&gt; separately. There is an advantage to this that's perhaps not immediately apparent. If we create a new kind of &lt;code&gt;InboxAction&lt;/code&gt; later, and forget to handle it in the &lt;code&gt;inbox&amp;#95;reducer&lt;/code&gt; the compiler will actually be able to warn us about this potential mistake.&lt;/p&gt;&lt;p&gt;Finally, the &lt;code&gt;sent&amp;#95;reducer&lt;/code&gt; simply adds emails to the front of a linked list&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let sent&amp;#95;reducer sent action =&amp;gt;
+  switch action {
+  | EmailSentAction email =&amp;gt; &amp;#91;email, ...sent&amp;#93;
+  | &amp;#95; =&amp;gt; sent
+  };
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The store itself is modelled as nested records&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;type email&amp;#95;store = {
+  inbox: Inbox.t,
+  sent: list email
+};
+
+type store = {
+  contacts: Contacts.t,
+  emails: email&amp;#95;store
+};
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Higher order reducers are combined manually until we finally define the &lt;code&gt;root&amp;#95;reducer&lt;/code&gt;:&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let email&amp;#95;reducer email&amp;#95;store action =&amp;gt; {
+  inbox: inbox&amp;#95;reducer email&amp;#95;store.inbox action,
+  sent: sent&amp;#95;reducer email&amp;#95;store.sent action
+};
+
+let root&amp;#95;reducer store action =&amp;gt; {
+  contacts: contact&amp;#95;reducer store.contacts action,
+  emails: email&amp;#95;reducer store.emails action
+};
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;To test this out we explicitly define an initial store and a list of actions&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let initial&amp;#95;store = {
+  contacts: Contacts.empty,
+  emails: {
+    sent: &amp;#91;&amp;#93;,
+    inbox: Inbox.empty
+  }
+};
+
+let actions = &amp;#91;
+  EmailSentAction {
+    from&amp;#95;addr: &amp;quot;flint@example.com&amp;quot;,
+    to&amp;#95;addr: &amp;quot;strax@example.com&amp;quot;,
+    title: &amp;quot;Hi!&amp;quot;,
+    body: &amp;quot;...&amp;quot;
+  },
+  ContactAction &amp;#40;
+    AddContact {id: 101L, email: &amp;quot;vastra@example.com&amp;quot;}
+  &amp;#41;,
+  InboxAction &amp;#40;
+    AddToInbox {
+      from&amp;#95;addr: &amp;quot;strax@example.com&amp;quot;,
+      to&amp;#95;addr: &amp;quot;flint@example.com&amp;quot;,
+      title: &amp;quot;Re: Hi&amp;quot;,
+      body: &amp;quot;...&amp;quot;
+    }
+  &amp;#41;,
+  ContactAction &amp;#40;
+    AddContact {id: 102L, email: &amp;quot;flint@example.com&amp;quot;}
+  &amp;#41;,
+  ContactAction &amp;#40;RemoveContact 101L&amp;#41;,
+  ContactAction &amp;#40;
+    AddContact {id: 103L, email: &amp;quot;strax@example.com&amp;quot;}
+  &amp;#41;
+&amp;#93;;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;We can load all these top level expressions into the &lt;code&gt;rtop&lt;/code&gt; repl using &lt;code&gt;#use &amp;quot;Reducers.re&amp;quot;&lt;/code&gt; or simply by copy pasting each form one by one into the repl. Finally, we can apply the list of actions to the initial store using &lt;code&gt;List.fold&amp;#95;left&lt;/code&gt; (&lt;code&gt;Reason#&lt;/code&gt; is the repl prompt):&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;Reason# let result = List.fold&amp;#95;left root&amp;#95;reducer initial&amp;#95;store actions;
+let result : store =
+  {contacts : &amp;lt;abstr&amp;gt;,
+   emails :
+    {inbox : &amp;lt;abstr&amp;gt;,
+     sent :
+      &amp;#91;{from&amp;#95;addr : &amp;quot;flint@example.com&amp;quot;, to&amp;#95;addr : &amp;quot;strax@example.com&amp;quot;,
+        title : &amp;quot;Hi!&amp;quot;, body : &amp;quot;...&amp;quot;}&amp;#93;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Unfortunately maps and sets are printed as &lt;code&gt;&amp;lt;abstr&amp;gt;&lt;/code&gt; by the &lt;code&gt;rtop&lt;/code&gt; repl but I'm just going to trust the &lt;em&gt;&quot;if it compiles, it works&quot;&lt;/em&gt; mantra and assume it's the correct result. It is possible to tell the repl how to print custom data types, but this can be a topic for a future blog post.&lt;/p&gt;&lt;p&gt;For now we can also manually check contacts with&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;Reason# Contacts.bindings result.contacts;
+- : list &amp;#40;int64, contact&amp;#41; =
+  &amp;#91;&amp;#40;102L, {id : 102L, email : &amp;quot;flint@example.com&amp;quot;}&amp;#41;,
+   &amp;#40;103L, {id : 103L, email : &amp;quot;strax@example.com&amp;quot;}&amp;#41;&amp;#93;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;and the inbox using&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;Reason# Inbox.elements result.emails.inbox;
+- : list email =
+  &amp;#91;{from&amp;#95;addr : &amp;quot;strax@example.com&amp;quot;, to&amp;#95;addr : &amp;quot;flint@example.com&amp;quot;,
+    title : &amp;quot;Reply: Hi&amp;quot;, body : &amp;quot;...&amp;quot;}&amp;#93;
+&lt;/code&gt;&lt;/pre&gt;&lt;h3&gt;&lt;a name=&quot;conclusions&quot;&gt;&lt;/a&gt;Conclusions&lt;/h3&gt;&lt;p&gt;You might have noticed that I never actually defined the &lt;code&gt;combineReducers&lt;/code&gt; function. This is simply because I couldn't figure out how to do it. Instead I manually built the &lt;code&gt;root&amp;#95;reducer&lt;/code&gt; out of other reducers. I'm sure it's possible to build a generic function like &lt;code&gt;combineReducers&lt;/code&gt; in Reason and perhaps with more experience I'll be able to do it.&lt;/p&gt;&lt;p&gt;On the other hand there isn't much of a practical difference between&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;ocaml&quot;&gt;let email&amp;#95;reducer email&amp;#95;store action =&amp;gt; {
+  inbox: inbox&amp;#95;reducer email&amp;#95;store.inbox action,
+  sent: sent&amp;#95;reducer email&amp;#95;store.sent action
+};
+
+let root&amp;#95;reducer store action =&amp;gt; {
+  contacts: contact&amp;#95;reducer store.contacts action,
+  emails: email&amp;#95;reducer store.emails action
+};
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;and&lt;/p&gt;&lt;pre&gt;&lt;code class=&quot;javascript&quot;&gt;const rootReducer = combineReducers&amp;#40;{
+  contacts: contactsReducer,
+  emails: combineReducers&amp;#40;{
+    inbox: inboxReducer,
+    sent: sentReducer
+  }&amp;#41;
+}&amp;#41;;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;What we achieved instead might be just as valuable since everything is type checked at compile time, including the actions and the store itself.&lt;/p&gt;&lt;p&gt;Finally I would like to thank &lt;a href='https://twitter.com/pycurious'&gt;@pycurious&lt;/a&gt;, &lt;a href='https://twitter.com/&amp;#95;chenglou'&gt;@&amp;#95;chenglou&lt;/a&gt;, &lt;a href='https://twitter.com/jordwalke'&gt;@jordwalke&lt;/a&gt;, @jeffmo and @reynir (on irc, #reasonml) for very valuable feedback on earlier drafts of this post.&lt;/p&gt;
+</description>
+<pubDate>
+Sat, 21 May 2016 00:00:00 +0300
+</pubDate>
+<author>
+Jonas Enlund
+</author>
+</item>
 <item>
 <guid>
 http://jonase.github.io/nil-recur/posts/14-5-2016-redux-in-clojure.html
